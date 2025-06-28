@@ -721,13 +721,28 @@
           titleDiv.style.fontSize = '2.1rem';
           titleDiv.style.marginBottom = '10px';
           titleDiv.style.display = 'flex';
-          titleDiv.style.alignItems = 'center';
-          titleDiv.style.gap = '18px';
+          titleDiv.style.flexDirection = 'column';
+          titleDiv.style.alignItems = 'flex-start';
+          titleDiv.style.gap = '0';
           // Name + Farbe
           let nameWithColor = '';
           if (json.name) {
             nameWithColor = json.name + (farbeText ? ' ' + farbeText : '');
-            titleDiv.textContent = nameWithColor;
+            // Name fett und groß
+            const nameDiv = document.createElement('div');
+            nameDiv.textContent = nameWithColor;
+            nameDiv.style.fontWeight = 'bold';
+            nameDiv.style.fontSize = '2.1rem';
+            // Hersteller klein darunter
+            const herstellerDiv = document.createElement('div');
+            herstellerDiv.style.fontSize = '1.1rem';
+            herstellerDiv.style.color = '#888';
+            herstellerDiv.style.fontWeight = 'normal';
+            herstellerDiv.style.marginTop = '2px';
+            herstellerDiv.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
+            titleDiv.textContent = '';
+            titleDiv.appendChild(nameDiv);
+            titleDiv.appendChild(herstellerDiv);
           }
           // Infos-Wrapper
           const infoCol = document.createElement('div');
@@ -823,13 +838,28 @@
           titleDiv.style.fontSize = '2.1rem';
           titleDiv.style.marginBottom = '10px';
           titleDiv.style.display = 'flex';
-          titleDiv.style.alignItems = 'center';
-          titleDiv.style.gap = '18px';
+          titleDiv.style.flexDirection = 'column';
+          titleDiv.style.alignItems = 'flex-start';
+          titleDiv.style.gap = '0';
           // Name + Farbe
           let nameWithColor = '';
           if (row['Material']) {
             nameWithColor = row['Material'] + (farbeText ? ' ' + farbeText : '');
-            titleDiv.textContent = nameWithColor;
+            // Name fett und groß
+            const nameDiv = document.createElement('div');
+            nameDiv.textContent = nameWithColor;
+            nameDiv.style.fontWeight = 'bold';
+            nameDiv.style.fontSize = '2.1rem';
+            // Hersteller klein darunter
+            const herstellerDiv = document.createElement('div');
+            herstellerDiv.style.fontSize = '1.1rem';
+            herstellerDiv.style.color = '#888';
+            herstellerDiv.style.fontWeight = 'normal';
+            herstellerDiv.style.marginTop = '2px';
+            herstellerDiv.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
+            titleDiv.textContent = '';
+            titleDiv.appendChild(nameDiv);
+            titleDiv.appendChild(herstellerDiv);
           }
           // Layout-Wrapper für Bild und Daten
           const contentRow = document.createElement('div');
