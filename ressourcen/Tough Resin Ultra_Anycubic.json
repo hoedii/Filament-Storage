@@ -1,0 +1,20 @@
+{
+  "name": "ABS-Like Resin V2",
+  "product_url": "https://store.anycubic.com/products/abs-like-resin-v2",
+  "technical_data": {
+    "UV Wavelength": "365–405 nm",
+    "Elongation at Break": "70-80 %",
+    "Density": "1.05-1.25 g/cm³",
+    "Molding Shrinkage": "5.1-6.2 %",
+    "Viscosity": "500-900 cP·mPa·s",
+    "Flexural Strength": "15-25 MPa",
+    "Hardness": "71-75 D",
+    "Flexural Modulus": "350-800 MPa",
+    "Tensile Strength": "20-28 MPa",
+    "Heat Deflection Temperature": "50-55 ℃",
+    "Bottom Exposure Time": "20–40 s",
+    "Normal Exposure Time": "1.5–3",
+    "Resin Wash": "Alcohol",
+    "Shelf Life": "1.5 Year"
+  }
+}

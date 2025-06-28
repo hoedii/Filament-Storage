@@ -1,0 +1,14 @@
+{
+  "name": "PETG",
+  "product_url": "https://store.anycubic.com/products/petg-filament",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "65℃-70℃, 6h-12h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "230-250℃",
+    "Heated Bed Temperature": "70-90℃",
+    "Printing Speed": "40-100mm/s",
+    "Cooling Time": "5s",
+    "Maximum Volumetric Flow Rate": "12mm³/s"
+  }
+}

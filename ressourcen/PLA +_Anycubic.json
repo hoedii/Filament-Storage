@@ -1,0 +1,14 @@
+{
+  "name": "PLA +",
+  "product_url": "https://store.anycubic.com/products/pla-plus-filament",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "65℃-70℃, 6h-12h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "190-230℃",
+    "Heated Bed Temperature": "50-60℃",
+    "Printing Speed": "50-100mm/s",
+    "Cooling Time": "5s",
+    "Maximum Volumetric Flow Rate": "15mm³/s"
+  }
+}

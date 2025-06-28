@@ -1,0 +1,14 @@
+{
+  "name": "TPU",
+  "product_url": "https://store.anycubic.com/products/tpu-filament",
+  "technical_data": {
+    "Dry Out Before Use": "Necessary",
+    "Dry Conditions": "70℃-80℃, 8h",
+    "ACE Pro Compatibility": "Not Compatible",
+    "Printing Temperature": "195-230℃",
+    "Heated Bed Temperature": "50-60℃",
+    "Printing Speed": "20mm/s",
+    "Cooling Time": "8s",
+    "Maximum Volumetric Flow Rate": "12mm/s"
+  }
+}

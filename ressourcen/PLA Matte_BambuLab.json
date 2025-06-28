@@ -1,0 +1,14 @@
+{
+  "name": "PLA Matte",
+  "product_url": "https://eu.store.bambulab.com/products/pla-matte?id=47794659688796",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "55℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "190-230℃",
+    "Heated Bed Temperature": "55-65℃",
+    "Printing Speed": "50-200mm/s",
+    "Cooling Time": "8s",
+    "Maximum Volumetric Flow Rate": "12mm/s"
+  }
+}

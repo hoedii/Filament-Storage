@@ -1,0 +1,14 @@
+{
+  "name": "ASA",
+  "product_url": "https://store.anycubic.com/products/asa-filament",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "70℃-80℃, 8h-12h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "250-270℃",
+    "Heated Bed Temperature": "100-110℃",
+    "Printing Speed": "40-60mm/s",
+    "Cooling Time": "6-10s",
+    "Maximum Volumetric Flow Rate": "9-15mm/s"
+  }
+}

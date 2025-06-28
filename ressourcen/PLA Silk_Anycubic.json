@@ -1,0 +1,14 @@
+{
+  "name": "PLA Silk",
+  "product_url": "https://store.anycubic.com/products/silk-pla-filament",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "40℃-50℃, 6h-8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "190-230℃",
+    "Heated Bed Temperature": "55-65℃",
+    "Printing Speed": "50-200mm/s",
+    "Cooling Time": "8s",
+    "Maximum Volumetric Flow Rate": "12mm/s"
+  }
+}
