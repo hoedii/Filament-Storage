@@ -359,8 +359,8 @@
               const material = (row['Material'] || '').replace(/ /g, '%20');
               const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
               const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
-              const imgUrl = `https://github.com/hoedii/Filament-Storage/tree/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
-              const settingsUrl = `https://github.com/hoedii/Filament-Storage/tree/main/ressourcen/${material}_${hersteller}.json`;
+              const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
+              const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}.json`;
               let hasImage = false, hasSettings = false;
               try {
                 const imgRes = await fetch(imgUrl, { method: 'HEAD' });
@@ -664,8 +664,8 @@
       const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
       const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
       const farbeText = (row['Farbe'] || row['Color'] || '').trim();
-      const imgUrlDefault = `https://github.com/hoedii/Filament-Storage/tree/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
-      const settingsUrl = `https://github.com/hoedii/Filament-Storage/tree/main/ressourcen/${material}_${hersteller}.json`;
+      const imgUrlDefault = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
+      const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}.json`;
       // Bild
       const img = document.createElement('img');
       img.src = imgUrlDefault;
