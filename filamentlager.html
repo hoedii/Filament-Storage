@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Filament Storage</title>
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/hoedii/filament-datenbank/main/Logo%20Filamentlager.png">
+  <style>
+    :root {
+      --primary: #0057b8;
+      --accent: #f0f4f9;
+      --text: #222;
+      --border: #ddd;
+      --bg: #fff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: var(--accent);
+      color: var(--text);
+    }
+
+    h2 {
+      margin-top: 0;
+    }
+
+    .card {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: left;
+      position: relative;
+    }
+
+    th {
+      background-color: #f8f9fa;
+    }
+
+    tr:hover td {
+      background-color: #f1f5fa;
+    }
+
+    .checkbox {
+      text-align: center;
+    }
+
+    .numeric {
+      text-align: right;
+    }
+
+    .summary-row {
+      font-weight: bold;
+      background: #f9f9f9;
+    }
+
+    .summary-row td {
+      border: none;
+    }
+
+    .summary-label {
+      text-align: right;
+      padding-right: 10px;
+    }
+
+    .filter-toggle {
+      vertical-align: middle;
+      color: #4a90e2 !important;
+      top: 2px;
+      position: relative;
+      font-size: 14px;
+      padding: 0 2px;
+    }
+
+    .filter-popup {
+      position: absolute;
+      top: 100%;
+      right: 0;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      padding: 10px;
+      z-index: 10;
+      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      display: none;
+      min-width: 160px;
+    }
+
+    .filter-popup label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: bold;
+    }
+
+    .filter-popup select,
+    .filter-popup input[type=range] {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .filter-popup .range-values {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .filter-toggle.active {
+      background: #e0eaff !important;
+      color: #0057b8 !important;
+      border-radius: 4px;
+    }
+
+    .filter-popup {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      border: 1.5px solid #b3c6e0;
+      background: #fafdff;
+      padding: 16px 14px 12px 14px;
+      border-radius: 10px;
+      min-width: 180px;
+      margin-top: 6px;
+    }
+
+    .filter-popup label {
+      font-size: 14px;
+      color: #0057b8;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .filter-popup select, .filter-popup input[type=range] {
+      margin-bottom: 12px;
+      margin-top: 2px;
+    }
+
+    .filter-popup .range-values {
+      margin-bottom: 6px;
+    }
+
+    .filter-toggle.active-dropdown {
+      background: #e6fbe6 !important;
+      color: #1a7f37 !important;
+      border-radius: 4px;
+    }
+
+    .filter-toggle.active-range {
+      background: #fff4e0 !important;
+      color: #b86a00 !important;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Filament Storage</h2>
+    <table id="spoolTable">
+      <thead id="tableHead"></thead>
+      <tbody></tbody>
+      <tfoot></tfoot>
+    </table>
+  </div>
+
+  <script>
+    const sheetUrl = 'https://script.google.com/macros/s/AKfycbzG35aQBQU_gCfj5Fzbk5n707CROTdHj7N132aIpbkx-HdmTI1PmOnW3T-YEvGyKOsfVQ/exec';
+    let originalData = [];
+    let filters = {};
+    let rangeFilters = {};
+    let sortState = { key: null, asc: true };
+
+    const colorNameMap = {
+      'Dark Blue': '#2d3d5c',
+      'Olive Green': '#5b6037',
+      'Turqoise': '#009cbd',
+      'Sakura Pink': '#f5c7d6',
+      'Purble': '#7f74a7',
+      'Green-Brown': '#60643f',
+      'Plum': '#942e54',
+      'Brown': '#9b8472',
+    };
+
+    function renderTable(data) {
+      const tableHead = document.getElementById('tableHead');
+      const tbody = document.querySelector('#spoolTable tbody');
+      tableHead.innerHTML = '';
+      tbody.innerHTML = '';
+
+      if (!data.length) return;
+
+      const keys = Object.keys(data[0]);
+      const headRow = document.createElement('tr');
+      keys.forEach(k => {
+        const th = document.createElement('th');
+        th.style.position = 'relative';
+        th.textContent = k;
+        // Sortier-Button
+        const sortBtn = document.createElement('button');
+        sortBtn.textContent = sortState.key === k ? (sortState.asc ? '▲' : '▼') : '↕';
+        sortBtn.style.marginLeft = '6px';
+        sortBtn.style.fontSize = '12px';
+        sortBtn.style.background = 'none';
+        sortBtn.style.border = 'none';
+        sortBtn.style.cursor = 'pointer';
+        sortBtn.title = 'Sortieren';
+        sortBtn.onclick = () => {
+          if (sortState.key === k) {
+            sortState.asc = !sortState.asc;
+          } else {
+            sortState.key = k;
+            sortState.asc = true;
+          }
+          applyFilters();
+        };
+        th.appendChild(sortBtn);
+        // Filter-Button NUR wenn nicht Measured (g) oder Remaining (g)
+        if (k !== 'Measured (g)' && k !== 'Remaining (g)') {
+          const chevronDownSVG = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline;vertical-align:middle;"><path d="M6 8L10 12L14 8" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+          const filterIcon = document.createElement('span');
+          filterIcon.className = 'filter-toggle';
+          filterIcon.innerHTML = chevronDownSVG;
+          filterIcon.style.cursor = 'pointer';
+          filterIcon.style.marginLeft = '6px';
+          filterIcon.style.display = 'inline-flex';
+          filterIcon.style.alignItems = 'center';
+          filterIcon.style.background = 'none';
+          filterIcon.style.border = 'none';
+          filterIcon.style.outline = 'none';
+          filterIcon.style.padding = '0';
+          if (isColumnFilterActive(k)) {
+            const type = getColumnFilterType(k);
+            if (type === 'range') filterIcon.classList.add('active-range');
+            else filterIcon.classList.add('active-dropdown');
+          }
+          const popup = document.createElement('div');
+          popup.className = 'filter-popup';
+          popup.dataset.key = k;
+          filterIcon.appendChild(popup);
+          filterIcon.onclick = (e) => toggleFilterPopup(e, k, data, true);
+          th.appendChild(filterIcon);
+        }
+        headRow.appendChild(th);
+      });
+      tableHead.appendChild(headRow);
+
+      // Sortierung anwenden
+      let sortedData = [...data];
+      if (sortState.key) {
+        sortedData.sort((a, b) => {
+          const valA = a[sortState.key] || '';
+          const valB = b[sortState.key] || '';
+          // Zahlenvergleich, falls beide Werte Zahlen sind
+          if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
+            return sortState.asc ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
+          }
+          // Stringvergleich
+          return sortState.asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+        });
+      }
+
+      // Zeilen ohne Spool ID ausblenden
+      sortedData = sortedData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
+
+      // Immer alle Zeilen anzeigen
+      let rowsToShow = sortedData;
+
+      rowsToShow.forEach(row => {
+        const tr = document.createElement('tr');
+        keys.forEach(key => {
+          const td = document.createElement('td');
+          if (row[key] === 'x') {
+            td.classList.add('checkbox');
+            td.innerHTML = '✔️';
+          } else if (!isNaN(row[key]) && row[key] !== '') {
+            td.classList.add('numeric');
+            // Spezialfall: Remaining (g) farbiges Kästchen
+            if (key === 'Remaining (g)') {
+              const val = parseFloat(row[key]);
+              const box = document.createElement('span');
+              box.textContent = val.toFixed(1) + ' g';
+              box.style.display = 'inline-block';
+              box.style.minWidth = '64px';
+              box.style.textAlign = 'center';
+              box.style.padding = '4px 10px';
+              box.style.borderRadius = '7px';
+              box.style.fontWeight = 'bold';
+              if (val === 0) {
+                box.style.background = 'none';
+                box.style.color = '#888';
+              } else if (val >= 1000) {
+                box.style.background = '#e0e0e0';
+                box.style.color = '#333';
+              } else {
+                // Farbverlauf: 1000g = grün, 500g = gelb, 0g = rot
+                // Interpolieren zwischen grün (#4caf50), gelb (#ffeb3b), rot (#f44336)
+                let color;
+                if (val > 500) {
+                  // Grün zu Gelb
+                  const t = (val - 500) / 500; // 1 bei 1000, 0 bei 500
+                  color = interpolateColor('#ffeb3b', '#4caf50', t);
+                } else {
+                  // Gelb zu Rot
+                  const t = val / 500; // 1 bei 500, 0 bei 0
+                  color = interpolateColor('#f44336', '#ffeb3b', t);
+                }
+                box.style.background = color;
+                box.style.color = '#222';
+              }
+              td.appendChild(box);
+            } else {
+              td.textContent = parseFloat(row[key]).toFixed(1) + ' g';
+            }
+          } else if (key === 'Farbe' || key === 'Color') {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'flex-start';
+            wrapper.style.justifyContent = 'flex-start';
+            // Farbfeld
+            const colorValue = row[key] || '';
+            const colorBox = document.createElement('span');
+            colorBox.style.display = 'inline-block';
+            colorBox.style.width = '22px';
+            colorBox.style.height = '22px';
+            colorBox.style.marginRight = '10px';
+            colorBox.style.borderRadius = '6px';
+            colorBox.style.border = '1.5px solid #bbb';
+            colorBox.style.boxSizing = 'border-box';
+            let cssColor = getCssColor(colorValue);
+            colorBox.style.background = cssColor;
+            wrapper.appendChild(colorBox);
+            // Namen und Info-Icon nebeneinander
+            const nameInfoRow = document.createElement('div');
+            nameInfoRow.style.display = 'flex';
+            nameInfoRow.style.flexDirection = 'row';
+            nameInfoRow.style.alignItems = 'center';
+            nameInfoRow.style.gap = '6px';
+            // Farbnamen
+            const colorDiv = document.createElement('div');
+            colorDiv.textContent = row[key] || '';
+            nameInfoRow.appendChild(colorDiv);
+            // Info-Icon ggf. rechts daneben
+            (async () => {
+              const material = (row['Material'] || '').replace(/ /g, '%20');
+              const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
+              const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+              const imgUrl = `https://raw.githubusercontent.com/hoedii/filament-datenbank/main/${material}_${hersteller}_${farbe}.jpg`;
+              const settingsUrl = `https://raw.githubusercontent.com/hoedii/filament-datenbank/main/${material}_${hersteller}.json`;
+              let hasImage = false, hasSettings = false;
+              try {
+                const imgRes = await fetch(imgUrl, { method: 'HEAD' });
+                hasImage = imgRes.ok;
+              } catch {}
+              try {
+                const setRes = await fetch(settingsUrl, { method: 'HEAD' });
+                hasSettings = setRes.ok;
+              } catch {}
+              if (hasImage || hasSettings) {
+                const infoBtn = document.createElement('span');
+                infoBtn.textContent = 'i';
+                infoBtn.style.display = 'inline-flex';
+                infoBtn.style.alignItems = 'center';
+                infoBtn.style.justifyContent = 'center';
+                infoBtn.style.width = '18px';
+                infoBtn.style.height = '18px';
+                infoBtn.style.fontSize = '13px';
+                infoBtn.style.background = '#eee';
+                infoBtn.style.color = '#888';
+                infoBtn.style.borderRadius = '50%';
+                infoBtn.style.cursor = 'pointer';
+                infoBtn.style.border = 'none';
+                infoBtn.style.userSelect = 'none';
+                infoBtn.title = 'Filamentbild/Einstellungen anzeigen';
+                infoBtn.onclick = (e) => {
+                  e.stopPropagation();
+                  showFilamentImage(row);
+                };
+                nameInfoRow.appendChild(infoBtn);
+              }
+            })();
+            wrapper.appendChild(nameInfoRow);
+            td.appendChild(wrapper);
+          } else {
+            td.textContent = row[key] || '';
+          }
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleFilterPopup(e, key, data, userClick = false, forceOpen = false) {
+      const filterIcon = e.target.closest('.filter-toggle');
+      const popup = filterIcon.querySelector('.filter-popup');
+      const isOpen = popup.style.display === 'block';
+      popup.innerHTML = '';
+      popup.style.display = 'block';
+
+      // Stoppe Event-Propagation im Popup, damit Klicks im Popup nicht "nach oben" wandern
+      popup.onclick = (event) => {
+        event.stopPropagation();
+      };
+
+      // Temporäre Filterwerte
+      let tempFilter = filters[key] || '';
+      let tempRange = rangeFilters[key] ? {
+        min: rangeFilters[key].min.value,
+        max: rangeFilters[key].max.value
+      } : null;
+
+      // Funktion zum Übernehmen und Anwenden der Filter
+      function applyTempFilterAndClose() {
+        if (getColumnFilterType(key) === 'range') {
+          if (!rangeFilters[key]) rangeFilters[key] = {};
+          rangeFilters[key].min.value = tempRange.min;
+          rangeFilters[key].max.value = tempRange.max;
+        } else {
+          filters[key] = tempFilter;
+        }
+        applyFilters();
+        popup.style.display = 'none';
+      }
+
+      // Schließen-Button oben rechts
+      const closeBtn = document.createElement('span');
+      closeBtn.textContent = '×';
+      closeBtn.style.position = 'absolute';
+      closeBtn.style.top = '8px';
+      closeBtn.style.right = '12px';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.fontSize = '18px';
+      closeBtn.style.color = '#888';
+      closeBtn.title = 'Anwenden & Schließen';
+      closeBtn.onclick = (ev) => {
+        ev.stopPropagation();
+        applyTempFilterAndClose();
+      };
+      popup.appendChild(closeBtn);
+
+      if (key === 'Measured (g)' || key === 'Remaining (g)') {
+        const values = data.map(row => parseFloat(row[key])).filter(v => !isNaN(v));
+        const minVal = Math.min(...values);
+        const maxVal = Math.max(...values);
+        const label = document.createElement('label');
+        label.textContent = key;
+        popup.appendChild(label);
+
+        // Double Range Slider Wrapper
+        const sliderWrapper = document.createElement('div');
+        sliderWrapper.style.position = 'relative';
+        sliderWrapper.style.height = '40px';
+        sliderWrapper.style.margin = '18px 0 8px 0';
+        sliderWrapper.style.display = 'flex';
+        sliderWrapper.style.alignItems = 'center';
+
+        // Farbbalken für den Bereich zwischen min und max
+        const rangeBar = document.createElement('div');
+        rangeBar.style.position = 'absolute';
+        rangeBar.style.height = '6px';
+        rangeBar.style.background = '#4a90e2';
+        rangeBar.style.borderRadius = '3px';
+        rangeBar.style.top = '50%';
+        rangeBar.style.transform = 'translateY(-50%)';
+        rangeBar.style.zIndex = '0';
+        rangeBar.style.pointerEvents = 'none';
+        sliderWrapper.appendChild(rangeBar);
+
+        // Min Range Input
+        const minInput = document.createElement('input');
+        minInput.type = 'range';
+        minInput.min = minVal;
+        minInput.max = maxVal;
+        minInput.step = 1;
+        minInput.value = tempRange ? tempRange.min : minVal;
+        minInput.style.position = 'absolute';
+        minInput.style.left = '0';
+        minInput.style.top = '0';
+        minInput.style.width = '100%';
+        minInput.style.pointerEvents = 'auto';
+        minInput.style.zIndex = '2';
+        minInput.style.background = 'transparent';
+        // Max Range Input
+        const maxInput = document.createElement('input');
+        maxInput.type = 'range';
+        maxInput.min = minVal;
+        maxInput.max = maxVal;
+        maxInput.step = 1;
+        maxInput.value = tempRange ? tempRange.max : maxVal;
+        maxInput.style.position = 'absolute';
+        maxInput.style.left = '0';
+        maxInput.style.top = '0';
+        maxInput.style.width = '100%';
+        maxInput.style.pointerEvents = 'auto';
+        maxInput.style.zIndex = '1';
+        maxInput.style.background = 'transparent';
+
+        // Werteanzeige
+        const rangeDisplay = document.createElement('div');
+        rangeDisplay.className = 'range-values';
+        rangeDisplay.style.marginBottom = '6px';
+        const minSpan = document.createElement('span');
+        const maxSpan = document.createElement('span');
+        minSpan.textContent = minInput.value + ' g';
+        maxSpan.textContent = maxInput.value + ' g';
+        rangeDisplay.appendChild(minSpan);
+        rangeDisplay.appendChild(maxSpan);
+        popup.appendChild(rangeDisplay);
+
+        // Hilfsfunktion: Prozentwert für Balken berechnen
+        function getPercent(val) {
+          return ((val - minVal) / (maxVal - minVal)) * 100;
+        }
+        // Balken-Position aktualisieren
+        function updateRangeBar() {
+          const minP = getPercent(parseInt(minInput.value));
+          const maxP = getPercent(parseInt(maxInput.value));
+          rangeBar.style.left = minP + '%';
+          rangeBar.style.width = (maxP - minP) + '%';
+        }
+
+        // Event-Handler für gegenseitige Begrenzung
+        minInput.oninput = () => {
+          if (parseInt(minInput.value) > parseInt(maxInput.value)) {
+            minInput.value = maxInput.value;
+          }
+          minSpan.textContent = minInput.value + ' g';
+          tempRange.min = minInput.value;
+          updateRangeBar();
+        };
+        maxInput.oninput = () => {
+          if (parseInt(maxInput.value) < parseInt(minInput.value)) {
+            maxInput.value = minInput.value;
+          }
+          maxSpan.textContent = maxInput.value + ' g';
+          tempRange.max = maxInput.value;
+          updateRangeBar();
+        };
+
+        // Initiale Balken-Position
+        updateRangeBar();
+
+        sliderWrapper.appendChild(minInput);
+        sliderWrapper.appendChild(maxInput);
+        popup.appendChild(sliderWrapper);
+      } else {
+        const label = document.createElement('label');
+        label.textContent = key;
+        popup.appendChild(label);
+        const select = document.createElement('select');
+        select.innerHTML = '<option value="">Alle</option>';
+        [...new Set(data.map(row => row[key] || ''))].sort().forEach(val => {
+          const option = document.createElement('option');
+          option.value = val;
+          option.textContent = val;
+          select.appendChild(option);
+        });
+        select.value = tempFilter;
+        select.onchange = () => { tempFilter = select.value; };
+        popup.appendChild(select);
+      }
+
+      // Speichere die Funktion und temporären Werte am Popup für den Outside-Click-Handler
+      popup._applyTempFilterAndClose = applyTempFilterAndClose;
+    }
+
+    function isFilterActive() {
+      return Object.values(filters).some(f => f) ||
+        Object.values(rangeFilters).some(f => f.min.value != f.min.min || f.max.value != f.max.max);
+    }
+
+    function applyFilters() {
+      const data = originalData.filter(row => {
+        for (let key in filters) {
+          if (filters[key] && row[key] !== filters[key]) return false;
+        }
+        for (let key in rangeFilters) {
+          const val = parseFloat(row[key]);
+          if (isNaN(val)) return false;
+          const min = parseFloat(rangeFilters[key].min.value);
+          const max = parseFloat(rangeFilters[key].max.value);
+          if (val < min || val > max) return false;
+        }
+        return true;
+      });
+
+      renderTable(data);
+      renderSummary(data);
+    }
+
+    function renderSummary(data) {
+      const tfoot = document.querySelector('#spoolTable tfoot');
+      tfoot.innerHTML = '';
+
+      let filament = 0, resin = 0;
+      data.forEach(row => {
+        const mat = (row["Material"] || "").toLowerCase();
+        const val = parseFloat(row["Remaining (g)"]);
+        if (!isNaN(val)) {
+          if (mat.includes("resin")) resin += val;
+          else filament += val;
+        }
+      });
+
+      const total = filament + resin;
+      const rows = [
+        ["Total Filament", filament],
+        ["Total Resin", resin],
+        ["Total", total]
+      ];
+
+      rows.forEach(([label, val]) => {
+        const tr = document.createElement('tr');
+        tr.className = 'summary-row';
+        const tdLabel = document.createElement('td');
+        tdLabel.colSpan = 9;
+        tdLabel.className = 'summary-label';
+        tdLabel.textContent = label;
+        const tdValue = document.createElement('td');
+        tdValue.className = 'numeric';
+        tdValue.textContent = (val / 1000).toFixed(2) + ' kg';
+        tr.appendChild(tdLabel);
+        tr.appendChild(tdValue);
+        tfoot.appendChild(tr);
+      });
+    }
+
+    function showFilamentImage(row) {
+      let modal = document.getElementById('filamentImageModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'filamentImageModal';
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.width = '100vw';
+        modal.style.height = '100vh';
+        modal.style.background = 'rgba(0,0,0,0.6)';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '1000';
+        modal.onclick = () => { modal.remove(); };
+        document.body.appendChild(modal);
+      } else {
+        modal.innerHTML = '';
+        modal.style.display = 'flex';
+      }
+      const material = (row['Material'] || '').replace(/ /g, '%20');
+      const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
+      const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+      const farbeText = (row['Farbe'] || row['Color'] || '').trim();
+      const imgUrlDefault = `https://raw.githubusercontent.com/hoedii/filament-datenbank/main/${material}_${hersteller}_${farbe}.jpg`;
+      const settingsUrl = `https://raw.githubusercontent.com/hoedii/filament-datenbank/main/${material}_${hersteller}.json`;
+      // Bild
+      const img = document.createElement('img');
+      img.src = imgUrlDefault;
+      img.alt = `${material} ${hersteller} ${farbe}`;
+      img.style.maxWidth = '340px';
+      img.style.maxHeight = '320px';
+      img.style.borderRadius = '10px';
+      img.style.background = '#f6f6f6';
+      img.style.objectFit = 'contain';
+      img.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
+      img.onerror = () => {
+        img.style.display = 'none';
+        errorMsg.style.display = 'block';
+      };
+      // Fehlermeldung Bild
+      const errorMsg = document.createElement('div');
+      errorMsg.textContent = 'Kein Bild gefunden!';
+      errorMsg.style.color = 'red';
+      errorMsg.style.display = 'none';
+      errorMsg.style.margin = '20px';
+      errorMsg.style.fontWeight = 'bold';
+      errorMsg.style.fontSize = '1.2rem';
+      // Lade die JSON mit fetch
+      fetch(settingsUrl)
+        .then(res => {
+          if (!res.ok) throw new Error('not found');
+          return res.json();
+        })
+        .then(json => {
+          // Modal-Inhalt Wrapper
+          const inner = document.createElement('div');
+          inner.style.background = '#fff';
+          inner.style.padding = '32px 32px 28px 32px';
+          inner.style.borderRadius = '16px';
+          inner.style.maxWidth = '950px';
+          inner.style.width = '95vw';
+          inner.style.maxHeight = '92vh';
+          inner.style.display = 'flex';
+          inner.style.flexDirection = 'column';
+          inner.style.alignItems = 'stretch';
+          inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
+          inner.onclick = (e) => { e.stopPropagation(); };
+          // Titel
+          const titleDiv = document.createElement('div');
+          titleDiv.style.fontWeight = 'bold';
+          titleDiv.style.fontSize = '2.1rem';
+          titleDiv.style.marginBottom = '10px';
+          titleDiv.style.display = 'flex';
+          titleDiv.style.alignItems = 'center';
+          titleDiv.style.gap = '18px';
+          // Name + Farbe
+          let nameWithColor = '';
+          if (json.name) {
+            nameWithColor = json.name + (farbeText ? ' ' + farbeText : '');
+            titleDiv.textContent = nameWithColor;
+          }
+          // Infos-Wrapper
+          const infoCol = document.createElement('div');
+          infoCol.style.display = 'flex';
+          infoCol.style.flexDirection = 'column';
+          infoCol.style.alignItems = 'flex-start';
+          infoCol.style.justifyContent = 'flex-start';
+          infoCol.style.width = 'min(100%, 700px)';
+          infoCol.style.maxWidth = '700px';
+          // Produktlink
+          if (json.product_url) {
+            const link = document.createElement('a');
+            link.href = json.product_url;
+            link.target = '_blank';
+            link.style.display = 'inline-flex';
+            link.style.alignItems = 'center';
+            link.style.gap = '8px';
+            link.style.background = '#0057b8';
+            link.style.color = '#fff';
+            link.style.fontWeight = 'bold';
+            link.style.fontSize = '17px';
+            link.style.padding = '10px 22px';
+            link.style.borderRadius = '7px';
+            link.style.textDecoration = 'none';
+            link.style.marginBottom = '18px';
+            link.style.marginTop = '6px';
+            link.style.transition = 'background 0.2s';
+            link.onmouseover = () => { link.style.background = '#003e87'; };
+            link.onmouseout = () => { link.style.background = '#0057b8'; };
+            // Link-Icon (SVG)
+            const icon = document.createElement('span');
+            icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            link.textContent = 'Produktlink';
+            link.appendChild(icon);
+            infoCol.appendChild(link);
+          }
+          // Technische Daten
+          if (json.technical_data) {
+            const table = document.createElement('table');
+            table.style.width = '100%';
+            table.style.marginTop = '10px';
+            table.style.borderCollapse = 'collapse';
+            Object.entries(json.technical_data).forEach(([k, v]) => {
+              const tr = document.createElement('tr');
+              const tdKey = document.createElement('td');
+              tdKey.textContent = k;
+              tdKey.style.fontWeight = 'bold';
+              tdKey.style.paddingRight = '16px';
+              tdKey.style.paddingBottom = '6px';
+              const tdVal = document.createElement('td');
+              tdVal.textContent = v;
+              tdVal.style.paddingBottom = '6px';
+              tr.appendChild(tdKey);
+              tr.appendChild(tdVal);
+              table.appendChild(tr);
+            });
+            infoCol.appendChild(table);
+          }
+          // Layout-Wrapper für Bild und Daten
+          const contentRow = document.createElement('div');
+          contentRow.style.display = 'flex';
+          contentRow.style.flexDirection = 'row';
+          contentRow.style.gap = '36px';
+          contentRow.style.alignItems = 'flex-start';
+          contentRow.style.justifyContent = 'flex-start';
+          contentRow.style.width = '100%';
+          contentRow.appendChild(img);
+          contentRow.appendChild(errorMsg);
+          contentRow.appendChild(infoCol);
+          // Zusammenbauen
+          inner.appendChild(titleDiv);
+          inner.appendChild(contentRow);
+          modal.innerHTML = '';
+          modal.appendChild(inner);
+        })
+        .catch(() => {
+          // Modal-Inhalt Wrapper (auch bei Fehler)
+          const inner = document.createElement('div');
+          inner.style.background = '#fff';
+          inner.style.padding = '32px 32px 28px 32px';
+          inner.style.borderRadius = '16px';
+          inner.style.maxWidth = '950px';
+          inner.style.width = '95vw';
+          inner.style.maxHeight = '92vh';
+          inner.style.display = 'flex';
+          inner.style.flexDirection = 'column';
+          inner.style.alignItems = 'stretch';
+          inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
+          inner.onclick = (e) => { e.stopPropagation(); };
+          // Titel
+          const titleDiv = document.createElement('div');
+          titleDiv.style.fontWeight = 'bold';
+          titleDiv.style.fontSize = '2.1rem';
+          titleDiv.style.marginBottom = '10px';
+          titleDiv.style.display = 'flex';
+          titleDiv.style.alignItems = 'center';
+          titleDiv.style.gap = '18px';
+          // Name + Farbe
+          let nameWithColor = '';
+          if (row['Material']) {
+            nameWithColor = row['Material'] + (farbeText ? ' ' + farbeText : '');
+            titleDiv.textContent = nameWithColor;
+          }
+          // Layout-Wrapper für Bild und Daten
+          const contentRow = document.createElement('div');
+          contentRow.style.display = 'flex';
+          contentRow.style.flexDirection = 'row';
+          contentRow.style.gap = '36px';
+          contentRow.style.alignItems = 'flex-start';
+          contentRow.style.justifyContent = 'flex-start';
+          contentRow.style.width = '100%';
+          contentRow.appendChild(img);
+          contentRow.appendChild(errorMsg);
+          // Zusammenbauen
+          inner.appendChild(titleDiv);
+          inner.appendChild(contentRow);
+          modal.innerHTML = '';
+          modal.appendChild(inner);
+        });
+    }
+
+    function isColumnFilterActive(key) {
+      if (filters[key] && filters[key] !== '') return true;
+      if (rangeFilters[key] && (
+        rangeFilters[key].min.value != rangeFilters[key].min.min ||
+        rangeFilters[key].max.value != rangeFilters[key].max.max
+      )) return true;
+      return false;
+    }
+
+    function getColumnFilterType(key) {
+      if (key === 'Measured (g)' || key === 'Remaining (g)') return 'range';
+      return 'dropdown';
+    }
+
+    // Hilfsfunktion für Farbinterpolation
+    function interpolateColor(color1, color2, t) {
+      // color1, color2: hex, t: 0..1
+      function hexToRgb(hex) {
+        hex = hex.replace('#', '');
+        if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+        const num = parseInt(hex, 16);
+        return [num >> 16, (num >> 8) & 255, num & 255];
+      }
+      function rgbToHex(r, g, b) {
+        return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+      }
+      const rgb1 = hexToRgb(color1);
+      const rgb2 = hexToRgb(color2);
+      const rgb = rgb1.map((c, i) => Math.round(c + (rgb2[i] - c) * t));
+      return rgbToHex(rgb[0], rgb[1], rgb[2]);
+    }
+
+    // Hilfsfunktion: Versucht, einen CSS-Farbwert aus dem Text zu machen
+    function getCssColor(val) {
+      if (!val) return '#eee';
+      if (colorNameMap[val.trim()]) return colorNameMap[val.trim()];
+      // Hex oder rgb direkt verwenden
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(val.trim())) return val.trim();
+      if (/^rgb\s*\(/i.test(val.trim())) return val.trim();
+      // Standard-Farbnamen testen
+      const s = document.createElement('span');
+      s.style.color = val.trim();
+      if (s.style.color) return val.trim();
+      // RAL oder andere Codes: Grau
+      return '#eee';
+    }
+
+    fetch(sheetUrl)
+      .then(res => res.json())
+      .then(data => {
+        originalData = data;
+        renderTable(data);
+        applyFilters();
+        const keys = Object.keys(data[0]);
+        if (keys.length > 0) {
+          filters[keys[0]] = data[0][keys[0]];
+          applyFilters();
+          filters[keys[0]] = '';
+          applyFilters();
+        }
+      });
+
+    // Globaler Klick-Listener zum Schließen des Filter-Popups beim Klick außerhalb
+    if (!window._popupOutsideClickListenerAdded) {
+      document.addEventListener('mousedown', function(event) {
+        // Suche alle offenen Popups (falls mehrere)
+        document.querySelectorAll('.filter-popup[style*="display: block"]').forEach(openPopup => {
+          if (!openPopup.contains(event.target)) {
+            // Übernehme die temporären Werte und schließe das Popup
+            if (typeof openPopup._applyTempFilterAndClose === 'function') {
+              openPopup._applyTempFilterAndClose();
+            } else {
+              openPopup.style.display = 'none';
+            }
+          }
+        });
+      });
+      window._popupOutsideClickListenerAdded = true;
+    }
+  </script>
+</body>
+</html>
