@@ -647,6 +647,18 @@
     }
 
     function showFilamentImage(row) {
+      // Spool IDs mit gleichem Material, Hersteller, Farbe suchen
+      const material = (row['Material'] || '').trim();
+      const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').trim();
+      const farbe = (row['Farbe'] || row['Color'] || '').trim();
+      const matchingSpoolIds = originalData
+        .filter(r => (r['Material'] || '').trim() === material && (r['Hersteller'] || r['Manufacturer'] || '').trim() === hersteller && (r['Farbe'] || r['Color'] || '').trim() === farbe)
+        .map(r => r['Spool ID'])
+        .filter(Boolean);
+      let spoolIdString = '';
+      if (matchingSpoolIds.length > 0) {
+        spoolIdString = ' (' + matchingSpoolIds.join(', ') + ')';
+      }
       let modal = document.getElementById('filamentImageModal');
       if (!modal) {
         modal = document.createElement('div');
@@ -667,12 +679,12 @@
         modal.innerHTML = '';
         modal.style.display = 'flex';
       }
-      const material = (row['Material'] || '').replace(/ /g, '%20');
-      const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
-      const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
-      const farbeText = (row['Farbe'] || row['Color'] || '').trim();
-      const imgUrlDefault = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
-      const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}.json`;
+      const materialEnc = material.replace(/ /g, '%20');
+      const herstellerEnc = hersteller.replace(/ /g, '%20');
+      const farbeEnc = farbe.replace(/ /g, '%20');
+      const farbeText = farbe;
+      const imgUrlDefault = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${materialEnc}_${herstellerEnc}_${farbeEnc}.jpg`;
+      const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${materialEnc}_${herstellerEnc}.json`;
       // Bild
       const img = document.createElement('img');
       img.src = imgUrlDefault;
@@ -724,15 +736,26 @@
           titleDiv.style.flexDirection = 'column';
           titleDiv.style.alignItems = 'flex-start';
           titleDiv.style.gap = '0';
-          // Name + Farbe
+          // Name + Farbe + Spool IDs
           let nameWithColor = '';
           if (json.name) {
-            nameWithColor = json.name + (farbeText ? ' ' + farbeText : '');
             // Name fett und groß
             const nameDiv = document.createElement('div');
-            nameDiv.textContent = nameWithColor;
             nameDiv.style.fontWeight = 'bold';
             nameDiv.style.fontSize = '2.1rem';
+            // Farbnamen
+            let farbTextNode = document.createTextNode(json.name + (farbeText ? ' ' + farbeText : ''));
+            nameDiv.appendChild(farbTextNode);
+            // Spool IDs dezent
+            if (spoolIdString) {
+              const idSpan = document.createElement('span');
+              idSpan.textContent = spoolIdString;
+              idSpan.style.fontSize = '1.3rem';
+              idSpan.style.color = '#888';
+              idSpan.style.marginLeft = '10px';
+              idSpan.style.fontWeight = 'normal';
+              nameDiv.appendChild(idSpan);
+            }
             // Hersteller klein darunter
             const herstellerDiv = document.createElement('div');
             herstellerDiv.style.fontSize = '1.1rem';
@@ -841,15 +864,26 @@
           titleDiv.style.flexDirection = 'column';
           titleDiv.style.alignItems = 'flex-start';
           titleDiv.style.gap = '0';
-          // Name + Farbe
+          // Name + Farbe + Spool IDs
           let nameWithColor = '';
           if (row['Material']) {
-            nameWithColor = row['Material'] + (farbeText ? ' ' + farbeText : '');
             // Name fett und groß
             const nameDiv = document.createElement('div');
-            nameDiv.textContent = nameWithColor;
             nameDiv.style.fontWeight = 'bold';
             nameDiv.style.fontSize = '2.1rem';
+            // Farbnamen
+            let farbTextNode = document.createTextNode(row['Material'] + (farbeText ? ' ' + farbeText : ''));
+            nameDiv.appendChild(farbTextNode);
+            // Spool IDs dezent
+            if (spoolIdString) {
+              const idSpan = document.createElement('span');
+              idSpan.textContent = spoolIdString;
+              idSpan.style.fontSize = '1.3rem';
+              idSpan.style.color = '#888';
+              idSpan.style.marginLeft = '10px';
+              idSpan.style.fontWeight = 'normal';
+              nameDiv.appendChild(idSpan);
+            }
             // Hersteller klein darunter
             const herstellerDiv = document.createElement('div');
             herstellerDiv.style.fontSize = '1.1rem';
