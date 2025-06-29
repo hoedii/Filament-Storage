@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <title>Filament Storage</title>
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/hoedii/Filament-Storage/main/Logo%20Filamentlager.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <style>
     :root {
       --primary: #0057b8;
@@ -166,16 +168,44 @@
       color: #b86a00 !important;
       border-radius: 4px;
     }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg);}
+      100% { transform: rotate(360deg);}
+    }
   </style>
 </head>
 <body>
+  <div id="loader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.7);z-index:3000;display:none;">
+    <div style="border:6px solid #f3f3f3;border-top:6px solid #0057b8;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite;"></div>
+  </div>
   <div class="card">
-    <h2>Filament Storage</h2>
+    <h2 style="display:flex;align-items:center;gap:16px;">Filament Storage
+      <button id="printBtn" title="Tabelle als PDF exportieren" style="background:none;border:none;cursor:pointer;padding:0;margin-left:8px;">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0057b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="9" width="12" height="7" rx="2"/><path d="M6 17v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2"/><polyline points="6 9 6 4 18 4 18 9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+      </button>
+    </h2>
     <table id="spoolTable">
       <thead id="tableHead"></thead>
       <tbody></tbody>
       <tfoot></tfoot>
     </table>
+  </div>
+  <!-- Modal für Zeilenauswahl -->
+  <div id="printModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:4000;align-items:center;justify-content:center;">
+    <form id="printForm" style="background:#fff;padding:32px 28px 24px 28px;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:18px;min-width:320px;max-width:90vw;max-height:90vh;overflow:auto;">
+      <h3 style="margin:0 0 8px 0;">Welche Positionen exportieren?</h3>
+      <div id="printRows" style="display:flex;flex-direction:column;gap:6px;max-height:45vh;overflow:auto;"></div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+        <label><input type="checkbox" id="pdfTotalFilament" checked> Total Filament anzeigen</label>
+        <label><input type="checkbox" id="pdfTotalResin" checked> Total Resin anzeigen</label>
+        <label><input type="checkbox" id="pdfTotalAll" checked> Total (gesamt) anzeigen</label>
+      </div>
+      <div style="display:flex;gap:16px;justify-content:flex-end;margin-top:10px;">
+        <button type="button" id="printCancel" style="padding:7px 18px;border-radius:6px;border:none;background:#eee;color:#333;cursor:pointer;">Abbrechen</button>
+        <button type="submit" style="padding:7px 18px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;">PDF erstellen</button>
+      </div>
+    </form>
   </div>
 
   <footer style="text-align: center; margin-top: 40px;">
@@ -614,7 +644,8 @@
       tfoot.innerHTML = '';
 
       let filament = 0, resin = 0;
-      data.forEach(row => {
+      // Nur Zeilen mit Spool ID berücksichtigen (wie PDF)
+      data.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '').forEach(row => {
         const mat = (row["Material"] || "").toLowerCase();
         const val = parseFloat(row["Remaining (g)"]);
         if (!isNaN(val)) {
@@ -960,6 +991,34 @@
       return '#eee';
     }
 
+    // Hilfsfunktion: CSS-Farbwert (auch Name) zu RGB-Array für jsPDF
+    function cssColorToRgbArray(val) {
+      // Hex
+      if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(val)) {
+        let hex = val.replace('#', '');
+        if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+        const num = parseInt(hex, 16);
+        return [num >> 16, (num >> 8) & 255, num & 255];
+      }
+      // rgb(x, y, z)
+      if (/^rgb\s*\(/i.test(val)) {
+        const m = val.match(/\d+/g);
+        if (m && m.length >= 3) return [parseInt(m[0]), parseInt(m[1]), parseInt(m[2])];
+      }
+      // Farbnamen: temporäres Element nutzen
+      const s = document.createElement('span');
+      s.style.color = val;
+      document.body.appendChild(s);
+      const rgb = window.getComputedStyle(s).color;
+      document.body.removeChild(s);
+      const m = rgb.match(/\d+/g);
+      if (m && m.length >= 3) return [parseInt(m[0]), parseInt(m[1]), parseInt(m[2])];
+      // Fallback: hellgrau
+      return [238,238,238];
+    }
+
+    // Daten laden mit Lade-Spinner
+    document.getElementById('loader').style.display = 'flex';
     fetch(sheetUrl)
       .then(res => res.json())
       .then(data => {
@@ -973,6 +1032,9 @@
           filters[keys[0]] = '';
           applyFilters();
         }
+      })
+      .finally(() => {
+        document.getElementById('loader').style.display = 'none';
       });
 
     // Globaler Klick-Listener zum Schließen des Filter-Popups beim Klick außerhalb
@@ -992,6 +1054,266 @@
       });
       window._popupOutsideClickListenerAdded = true;
     }
+
+    // PDF-Export Funktionalität
+    document.getElementById('printBtn').onclick = function() {
+      // Modal anzeigen
+      const modal = document.getElementById('printModal');
+      const rowsDiv = document.getElementById('printRows');
+      rowsDiv.innerHTML = '';
+      // Zeilen holen (wie in Tabelle, aber nur mit Spool ID)
+      const filtered = originalData.filter(row => {
+        for (let key in filters) {
+          if (filters[key] && row[key] !== filters[key]) return false;
+        }
+        for (let key in rangeFilters) {
+          const val = parseFloat(row[key]);
+          if (isNaN(val)) return false;
+          const min = parseFloat(rangeFilters[key].min.value);
+          const max = parseFloat(rangeFilters[key].max.value);
+          if (val < min || val > max) return false;
+        }
+        return row['Spool ID'] && row['Spool ID'].trim() !== '';
+      });
+      // Checkboxen für jede Zeile mit Spool ID
+      filtered.forEach((row, idx) => {
+        const label = document.createElement('label');
+        label.style.display = 'flex';
+        label.style.alignItems = 'center';
+        label.style.gap = '8px';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = true;
+        cb.value = idx;
+        label.appendChild(cb);
+        // Zeilen-Text (z.B. Spool ID + Material + Farbe)
+        let txt = row['Spool ID'] || '';
+        if (row['Material']) txt += ' | ' + row['Material'];
+        if (row['Farbe'] || row['Color']) txt += ' | ' + (row['Farbe'] || row['Color']);
+        label.appendChild(document.createTextNode(txt));
+        rowsDiv.appendChild(label);
+      });
+      modal.style.display = 'flex';
+    };
+    document.getElementById('printCancel').onclick = function() {
+      document.getElementById('printModal').style.display = 'none';
+    };
+    document.getElementById('printForm').onsubmit = function(e) {
+      e.preventDefault();
+      const modal = document.getElementById('printModal');
+      const checkboxes = Array.from(document.querySelectorAll('#printRows input[type=checkbox]'));
+      const selectedIdx = checkboxes.filter(cb => cb.checked).map(cb => parseInt(cb.value));
+      if (selectedIdx.length === 0) {
+        alert('Bitte mindestens eine Position auswählen!');
+        return;
+      }
+      // Daten für PDF (nur Zeilen mit Spool ID)
+      const filtered = originalData.filter(row => {
+        for (let key in filters) {
+          if (filters[key] && row[key] !== filters[key]) return false;
+        }
+        for (let key in rangeFilters) {
+          const val = parseFloat(row[key]);
+          if (isNaN(val)) return false;
+          const min = parseFloat(rangeFilters[key].min.value);
+          const max = parseFloat(rangeFilters[key].max.value);
+          if (val < min || val > max) return false;
+        }
+        return row['Spool ID'] && row['Spool ID'].trim() !== '';
+      });
+      const rows = selectedIdx.map(i => filtered[i]);
+      // PDF erzeugen (Querformat)
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: 'portrait' });
+      if (!rows.length) return;
+      const keys = Object.keys(rows[0]);
+      // Spalten-Definitionen für Optik
+      const head = [keys.map(k => k)];
+      const body = rows.map(row => keys.map(k => {
+        // Checkboxen als x für Full, Empty, Refill
+        if ((k === 'Full' || k === 'Empty' || k === 'Refill') && row[k] === 'x') return 'x';
+        // Checkboxen als Häkchen (sonstige)
+        if (row[k] === 'x') return '✔️';
+        // Zahlen rechtsbündig, g-Einheit
+        if (!isNaN(row[k]) && row[k] !== '') {
+          if (k === 'Measured (g)') {
+            return parseFloat(row[k]).toFixed(1) + ' g';
+          }
+          if (k === 'Remaining (g)') {
+            const val = parseFloat(row[k]);
+            if (val === 1000.0) return '1000 g';
+            return val.toFixed(1) + ' g';
+          }
+          return row[k];
+        }
+        // Color/Farbe-Spalte: Nur Farbnamen zurückgeben
+        if (k === 'Farbe' || k === 'Color') {
+          const colorVal = (row[k] || '').trim();
+          return colorVal;
+        }
+        return row[k] || '';
+      }));
+      // Spaltenausrichtung: Checkboxen/Farbe/Strings links, Zahlen rechts
+      const columnStyles = {};
+      keys.forEach((k, i) => {
+        if (k === 'Farbe' || k === 'Color') {
+          columnStyles[i] = { halign: 'left', cellWidth: 24 };
+        } else {
+          columnStyles[i] = { halign: (!isNaN(rows[0][k]) ? 'right' : 'left'), cellWidth: 'auto' };
+        }
+        if (k === 'Full' || k === 'Empty' || k === 'Refill') columnStyles[i].halign = 'center';
+      });
+      // Summenoptionen auslesen
+      const showTotalFilament = document.getElementById('pdfTotalFilament').checked;
+      const showTotalResin = document.getElementById('pdfTotalResin').checked;
+      const showTotalAll = document.getElementById('pdfTotalAll').checked;
+      // Summen berechnen
+      let filament = 0, resin = 0;
+      rows.forEach(row => {
+        const mat = (row["Material"] || "").toLowerCase();
+        const val = parseFloat(row["Remaining (g)"]);
+        if (!isNaN(val)) {
+          if (mat.includes("resin")) resin += val;
+          else filament += val;
+        }
+      });
+      const total = filament + resin;
+
+      // Summenzeilen vorbereiten
+      const summaryRows = [];
+      if (showTotalFilament) summaryRows.push(["Total Filament", (filament/1000).toFixed(2) + " kg"]);
+      if (showTotalResin) summaryRows.push(["Total Resin", (resin/1000).toFixed(2) + " kg"]);
+      if (showTotalAll) summaryRows.push(["Total", (total/1000).toFixed(2) + " kg"]);
+
+      // PDF-Tabelle
+      doc.autoTable({
+        head: head,
+        body: body,
+        styles: { fontSize: 7, cellPadding: {top: 1, bottom: 1, left: 2, right: 2} },
+        headStyles: { fillColor: [248, 249, 250], textColor: 34, fontStyle: 'bold' },
+        columnStyles: columnStyles,
+        margin: { top: 12, left: 8, right: 8 },
+        theme: 'grid',
+        didParseCell: function(data) {
+          const colKey = keys[data.column.index];
+          if ((colKey === 'Farbe' || colKey === 'Color') && data.cell.section === 'body') {
+            data.cell.text = [''];
+          }
+        },
+        willDrawCell: function(data) {
+          const colKey = keys[data.column.index];
+          // Remaining (g) farblich wie im Web als Hintergrund
+          if (colKey === 'Remaining (g)' && data.section === 'body') {
+            let val = rows[data.row.index][colKey];
+            val = parseFloat(val);
+            let bgColor = null;
+            if (val === 0) {
+              bgColor = null;
+            } else if (val >= 1000) {
+              bgColor = [224,224,224];
+            } else if (val > 500) {
+              const t = (val - 500) / 500;
+              const r = Math.round(255 + (76-255)*t);
+              const g = Math.round(235 + (175-235)*t);
+              const b = Math.round(59 + (80-59)*t);
+              bgColor = [r,g,b];
+            } else {
+              const t = val / 500;
+              const r = Math.round(244 + (255-244)*t);
+              const g = Math.round(67 + (235-67)*t);
+              const b = Math.round(54 + (59-54)*t);
+              bgColor = [r,g,b];
+            }
+            if (bgColor) {
+              const { x, y, width, height } = data.cell;
+              if (typeof doc.setGState === 'function' && typeof doc.GState === 'function') {
+                doc.setGState(new doc.GState({ opacity: 0.6 }));
+                doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+                doc.roundedRect(x + 0.5, y + 0.5, width - 1, height - 1, 2, 2, 'F');
+                doc.setGState(new doc.GState({ opacity: 1 }));
+              } else {
+                doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+                doc.roundedRect(x + 0.5, y + 0.5, width - 1, height - 1, 2, 2, 'F');
+              }
+            }
+          }
+        },
+        didDrawCell: function(data) {
+          const colKey = keys[data.column.index];
+          // Textfarbe für Spool ID explizit setzen
+          if (colKey === 'Spool ID' && data.cell.section === 'body') {
+            doc.setTextColor(80,80,80);
+          }
+          // Textfarbe für Remaining (g) ggf. anpassen
+          if (colKey === 'Remaining (g)' && data.cell.section === 'body') {
+            let val = rows[data.row.index][colKey];
+            val = parseFloat(val);
+            let textColor = [34,34,34];
+            if (val === 0) {
+              textColor = [136,136,136];
+            } else if (val >= 1000) {
+              textColor = [51,51,51];
+            }
+            doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+          }
+          if ((colKey === 'Farbe' || colKey === 'Color') && data.cell.section === 'body') {
+            // Farbfeld-Quadrat und Text in Color/Farbe-Spalte zeichnen
+            const colorVal = data.cell.raw;
+            const x = data.cell.x;
+            const y = data.cell.y;
+            const height = data.cell.height;
+            const size = Math.min(4, height - 2);
+            const textOffset = 2;
+            // Farbe bestimmen
+            let cssColor = '#eee';
+            if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(colorVal)) cssColor = colorVal;
+            else if (typeof getCssColor === 'function') cssColor = getCssColor(colorVal);
+            const rgb = cssColorToRgbArray(cssColor);
+            // Quadrat zeichnen
+            const rx = x + 2;
+            const ry = y + (height - size) / 2;
+            const r = 0.8;
+            doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+            doc.roundedRect(rx, ry, size, size, r, r, 'F');
+            if (rgb[0] === 255 && rgb[1] === 255 && rgb[2] === 255) {
+              doc.setLineWidth(0.1);
+              doc.setDrawColor(0,0,0);
+              doc.roundedRect(rx, ry, size, size, r, r, 'S');
+            }
+            doc.setFillColor(255,255,255);
+            // Text daneben in exakt gleicher Farbe wie Spool ID
+            doc.setTextColor(80,80,80);
+            doc.setFontSize(7);
+            doc.text(String(colorVal), x + 2 + size + textOffset, y + height / 2, { baseline: 'middle' });
+            data.cell.text = [''];
+          }
+          // Summenzeilen am Ende einfügen
+          if (data.row.index === rows.length - 1 && summaryRows.length > 0 && data.cell.section === 'body' && data.column.index === keys.length - 1) {
+            let y = data.cell.y + data.cell.height;
+            summaryRows.forEach(([label, val]) => {
+              doc.setFontSize(7);
+              doc.setFont(undefined, 'bold');
+              doc.setTextColor(80,80,80);
+              doc.text(`${label}: ${val}`, data.cell.x + data.cell.width, y + 7, { align: 'right' });
+              y += 7;
+            });
+            doc.setFont(undefined, 'normal');
+          }
+        }
+      });
+      // Footer-Text und Datum unten auf der Seite
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      const footerText = '© 2025 piodeer. All rights reserved. Created with Github, Cursor & ChatGPT.';
+      const d = new Date();
+      const dateText = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth()+1).padStart(2, '0')}.${d.getFullYear()}`;
+      doc.setFontSize(7);
+      doc.setTextColor(180,180,180);
+      doc.text(footerText, pageWidth / 2, pageHeight - 10, { align: 'center' });
+      doc.text(dateText, pageWidth / 2, pageHeight - 4, { align: 'center' });
+      doc.save('Filamentlager.pdf');
+      modal.style.display = 'none';
+    };
   </script>
 </body>
 </html>
