@@ -96,15 +96,19 @@
     .filter-popup {
       position: absolute;
       top: 100%;
-      right: 0;
+      left: 0;
+      transform: none;
       background: #fff;
       border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 10px;
-      z-index: 10;
-      box-shadow: 0 0 6px rgba(0,0,0,0.1);
+      border-radius: 10px;
+      padding: 24px 32px 20px 32px;
+      z-index: 9999;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.18);
       display: none;
-      min-width: 160px;
+      min-width: unset;
+      max-width: 90vw;
+      max-height: 80vh;
+      overflow: auto;
     }
 
     .filter-popup label {
@@ -180,11 +184,12 @@
     <div style="border:6px solid #f3f3f3;border-top:6px solid #0057b8;border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite;"></div>
   </div>
   <div class="card">
-    <h2 style="display:flex;align-items:center;gap:16px;">Filament Storage
-      <button id="printBtn" title="Tabelle als PDF exportieren" style="background:none;border:none;cursor:pointer;padding:0;margin-left:8px;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0057b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="9" width="12" height="7" rx="2"/><path d="M6 17v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2"/><polyline points="6 9 6 4 18 4 18 9"/><line x1="9" y1="13" x2="15" y2="13"/></svg>
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <h2 style="margin: 0;">Filament Storage</h2>
+      <button id="printBtn" title="Tabelle als PDF exportieren" style="padding:5px 14px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;font-size:14px;">
+        Export Table
       </button>
-    </h2>
+    </div>
     <table id="spoolTable">
       <thead id="tableHead"></thead>
       <tbody></tbody>
@@ -193,7 +198,7 @@
   </div>
   <!-- Modal für Zeilenauswahl -->
   <div id="printModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:4000;align-items:center;justify-content:center;">
-    <form id="printForm" style="background:#fff;padding:32px 28px 24px 28px;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:18px;min-width:320px;max-width:90vw;max-height:90vh;overflow:auto;">
+    <form id="printForm" style="background:#fff;padding:32px 28px 24px 28px;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:18px;min-width:520px;max-width:1100px;max-height:90vh;overflow:auto;">
       <h3 style="margin:0 0 8px 0;">Which positions to export?</h3>
       <div id="printRows" style="display:flex;flex-direction:column;gap:6px;max-height:45vh;overflow:auto;"></div>
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
@@ -239,9 +244,8 @@
       tableHead.innerHTML = '';
       tbody.innerHTML = '';
 
-      if (!data.length) return;
-
-      const keys = Object.keys(data[0]);
+      // Kopfzeile immer anzeigen, auch wenn keine Daten
+      const keys = Object.keys(originalData[0] || {});
       const headRow = document.createElement('tr');
       keys.forEach(k => {
         const th = document.createElement('th');
@@ -289,156 +293,159 @@
           popup.className = 'filter-popup';
           popup.dataset.key = k;
           filterIcon.appendChild(popup);
-          filterIcon.onclick = (e) => toggleFilterPopup(e, k, data, true);
+          filterIcon.onclick = (e) => toggleFilterPopup(e, k, originalData, true);
           th.appendChild(filterIcon);
         }
         headRow.appendChild(th);
       });
       tableHead.appendChild(headRow);
 
-      // Sortierung anwenden
-      let sortedData = [...data];
-      if (sortState.key) {
-        sortedData.sort((a, b) => {
-          const valA = a[sortState.key] || '';
-          const valB = b[sortState.key] || '';
-          // Zahlenvergleich, falls beide Werte Zahlen sind
-          if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
-            return sortState.asc ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
-          }
-          // Stringvergleich
-          return sortState.asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+      // Nur Zeilen rendern, wenn Daten vorhanden
+      if (data.length) {
+        // Sortierung anwenden
+        let sortedData = [...data];
+        if (sortState.key) {
+          sortedData.sort((a, b) => {
+            const valA = a[sortState.key] || '';
+            const valB = b[sortState.key] || '';
+            // Zahlenvergleich, falls beide Werte Zahlen sind
+            if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
+              return sortState.asc ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
+            }
+            // Stringvergleich
+            return sortState.asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
+          });
+        }
+
+        // Zeilen ohne Spool ID ausblenden
+        sortedData = sortedData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
+
+        // Immer alle Zeilen anzeigen
+        let rowsToShow = sortedData;
+
+        rowsToShow.forEach(row => {
+          const tr = document.createElement('tr');
+          keys.forEach(key => {
+            const td = document.createElement('td');
+            if (row[key] === 'x') {
+              td.classList.add('checkbox');
+              td.innerHTML = '✔️';
+            } else if (!isNaN(row[key]) && row[key] !== '') {
+              td.classList.add('numeric');
+              // Spezialfall: Remaining (g) farbiges Kästchen
+              if (key === 'Remaining (g)') {
+                const val = parseFloat(row[key]);
+                const box = document.createElement('span');
+                box.textContent = val.toFixed(1) + ' g';
+                box.style.display = 'inline-block';
+                box.style.minWidth = '64px';
+                box.style.textAlign = 'center';
+                box.style.padding = '4px 10px';
+                box.style.borderRadius = '7px';
+                box.style.fontWeight = 'bold';
+                if (val === 0) {
+                  box.style.background = 'none';
+                  box.style.color = '#888';
+                } else if (val >= 1000) {
+                  box.style.background = '#e0e0e0';
+                  box.style.color = '#333';
+                } else {
+                  // Farbverlauf: 1000g = grün, 500g = gelb, 0g = rot
+                  // Interpolieren zwischen grün (#4caf50), gelb (#ffeb3b), rot (#f44336)
+                  let color;
+                  if (val > 500) {
+                    // Grün zu Gelb
+                    const t = (val - 500) / 500; // 1 bei 1000, 0 bei 500
+                    color = interpolateColor('#ffeb3b', '#4caf50', t);
+                  } else {
+                    // Gelb zu Rot
+                    const t = val / 500; // 1 bei 500, 0 bei 0
+                    color = interpolateColor('#f44336', '#ffeb3b', t);
+                  }
+                  box.style.background = color;
+                  box.style.color = '#222';
+                }
+                td.appendChild(box);
+              } else {
+                td.textContent = parseFloat(row[key]).toFixed(1) + ' g';
+              }
+            } else if (key === 'Farbe' || key === 'Color') {
+              const wrapper = document.createElement('div');
+              wrapper.style.display = 'flex';
+              wrapper.style.alignItems = 'flex-start';
+              wrapper.style.justifyContent = 'flex-start';
+              // Farbfeld
+              const colorValue = row[key] || '';
+              const colorBox = document.createElement('span');
+              colorBox.style.display = 'inline-block';
+              colorBox.style.width = '22px';
+              colorBox.style.height = '22px';
+              colorBox.style.marginRight = '10px';
+              colorBox.style.borderRadius = '6px';
+              colorBox.style.border = '1.5px solid #bbb';
+              colorBox.style.boxSizing = 'border-box';
+              let cssColor = getCssColor(colorValue);
+              colorBox.style.background = cssColor;
+              wrapper.appendChild(colorBox);
+              // Namen und Info-Icon nebeneinander
+              const nameInfoRow = document.createElement('div');
+              nameInfoRow.style.display = 'flex';
+              nameInfoRow.style.flexDirection = 'row';
+              nameInfoRow.style.alignItems = 'center';
+              nameInfoRow.style.gap = '6px';
+              // Farbnamen
+              const colorDiv = document.createElement('div');
+              colorDiv.textContent = row[key] || '';
+              nameInfoRow.appendChild(colorDiv);
+              // Info-Icon ggf. rechts daneben
+              (async () => {
+                const material = (row['Material'] || '').replace(/ /g, '%20');
+                const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
+                const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+                const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
+                const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}.json`;
+                let hasImage = false, hasSettings = false;
+                try {
+                  const imgRes = await fetch(imgUrl, { method: 'HEAD' });
+                  hasImage = imgRes.ok;
+                } catch {}
+                try {
+                  const setRes = await fetch(settingsUrl, { method: 'HEAD' });
+                  hasSettings = setRes.ok;
+                } catch {}
+                if (hasImage || hasSettings) {
+                  const infoBtn = document.createElement('span');
+                  infoBtn.textContent = 'i';
+                  infoBtn.style.display = 'inline-flex';
+                  infoBtn.style.alignItems = 'center';
+                  infoBtn.style.justifyContent = 'center';
+                  infoBtn.style.width = '18px';
+                  infoBtn.style.height = '18px';
+                  infoBtn.style.fontSize = '13px';
+                  infoBtn.style.background = '#eee';
+                  infoBtn.style.color = '#888';
+                  infoBtn.style.borderRadius = '50%';
+                  infoBtn.style.cursor = 'pointer';
+                  infoBtn.style.border = 'none';
+                  infoBtn.style.userSelect = 'none';
+                  infoBtn.title = 'Filamentbild/Einstellungen anzeigen';
+                  infoBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    showFilamentImage(row);
+                  };
+                  nameInfoRow.appendChild(infoBtn);
+                }
+              })();
+              wrapper.appendChild(nameInfoRow);
+              td.appendChild(wrapper);
+            } else {
+              td.textContent = row[key] || '';
+            }
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
         });
       }
-
-      // Zeilen ohne Spool ID ausblenden
-      sortedData = sortedData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
-
-      // Immer alle Zeilen anzeigen
-      let rowsToShow = sortedData;
-
-      rowsToShow.forEach(row => {
-        const tr = document.createElement('tr');
-        keys.forEach(key => {
-          const td = document.createElement('td');
-          if (row[key] === 'x') {
-            td.classList.add('checkbox');
-            td.innerHTML = '✔️';
-          } else if (!isNaN(row[key]) && row[key] !== '') {
-            td.classList.add('numeric');
-            // Spezialfall: Remaining (g) farbiges Kästchen
-            if (key === 'Remaining (g)') {
-              const val = parseFloat(row[key]);
-              const box = document.createElement('span');
-              box.textContent = val.toFixed(1) + ' g';
-              box.style.display = 'inline-block';
-              box.style.minWidth = '64px';
-              box.style.textAlign = 'center';
-              box.style.padding = '4px 10px';
-              box.style.borderRadius = '7px';
-              box.style.fontWeight = 'bold';
-              if (val === 0) {
-                box.style.background = 'none';
-                box.style.color = '#888';
-              } else if (val >= 1000) {
-                box.style.background = '#e0e0e0';
-                box.style.color = '#333';
-              } else {
-                // Farbverlauf: 1000g = grün, 500g = gelb, 0g = rot
-                // Interpolieren zwischen grün (#4caf50), gelb (#ffeb3b), rot (#f44336)
-                let color;
-                if (val > 500) {
-                  // Grün zu Gelb
-                  const t = (val - 500) / 500; // 1 bei 1000, 0 bei 500
-                  color = interpolateColor('#ffeb3b', '#4caf50', t);
-                } else {
-                  // Gelb zu Rot
-                  const t = val / 500; // 1 bei 500, 0 bei 0
-                  color = interpolateColor('#f44336', '#ffeb3b', t);
-                }
-                box.style.background = color;
-                box.style.color = '#222';
-              }
-              td.appendChild(box);
-            } else {
-              td.textContent = parseFloat(row[key]).toFixed(1) + ' g';
-            }
-          } else if (key === 'Farbe' || key === 'Color') {
-            const wrapper = document.createElement('div');
-            wrapper.style.display = 'flex';
-            wrapper.style.alignItems = 'flex-start';
-            wrapper.style.justifyContent = 'flex-start';
-            // Farbfeld
-            const colorValue = row[key] || '';
-            const colorBox = document.createElement('span');
-            colorBox.style.display = 'inline-block';
-            colorBox.style.width = '22px';
-            colorBox.style.height = '22px';
-            colorBox.style.marginRight = '10px';
-            colorBox.style.borderRadius = '6px';
-            colorBox.style.border = '1.5px solid #bbb';
-            colorBox.style.boxSizing = 'border-box';
-            let cssColor = getCssColor(colorValue);
-            colorBox.style.background = cssColor;
-            wrapper.appendChild(colorBox);
-            // Namen und Info-Icon nebeneinander
-            const nameInfoRow = document.createElement('div');
-            nameInfoRow.style.display = 'flex';
-            nameInfoRow.style.flexDirection = 'row';
-            nameInfoRow.style.alignItems = 'center';
-            nameInfoRow.style.gap = '6px';
-            // Farbnamen
-            const colorDiv = document.createElement('div');
-            colorDiv.textContent = row[key] || '';
-            nameInfoRow.appendChild(colorDiv);
-            // Info-Icon ggf. rechts daneben
-            (async () => {
-              const material = (row['Material'] || '').replace(/ /g, '%20');
-              const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
-              const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
-              const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
-              const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}.json`;
-              let hasImage = false, hasSettings = false;
-              try {
-                const imgRes = await fetch(imgUrl, { method: 'HEAD' });
-                hasImage = imgRes.ok;
-              } catch {}
-              try {
-                const setRes = await fetch(settingsUrl, { method: 'HEAD' });
-                hasSettings = setRes.ok;
-              } catch {}
-              if (hasImage || hasSettings) {
-                const infoBtn = document.createElement('span');
-                infoBtn.textContent = 'i';
-                infoBtn.style.display = 'inline-flex';
-                infoBtn.style.alignItems = 'center';
-                infoBtn.style.justifyContent = 'center';
-                infoBtn.style.width = '18px';
-                infoBtn.style.height = '18px';
-                infoBtn.style.fontSize = '13px';
-                infoBtn.style.background = '#eee';
-                infoBtn.style.color = '#888';
-                infoBtn.style.borderRadius = '50%';
-                infoBtn.style.cursor = 'pointer';
-                infoBtn.style.border = 'none';
-                infoBtn.style.userSelect = 'none';
-                infoBtn.title = 'Filamentbild/Einstellungen anzeigen';
-                infoBtn.onclick = (e) => {
-                  e.stopPropagation();
-                  showFilamentImage(row);
-                };
-                nameInfoRow.appendChild(infoBtn);
-              }
-            })();
-            wrapper.appendChild(nameInfoRow);
-            td.appendChild(wrapper);
-          } else {
-            td.textContent = row[key] || '';
-          }
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
     }
 
     function toggleFilterPopup(e, key, data, userClick = false, forceOpen = false) {
@@ -447,11 +454,48 @@
       const isOpen = popup.style.display === 'block';
       popup.innerHTML = '';
       popup.style.display = 'block';
+      popup.style.position = 'absolute';
+      popup.style.left = '0';
+      popup.style.top = '100%';
+      popup.style.zIndex = 9999;
+      // Nach dem Anzeigen: Position ggf. anpassen, damit Popup immer sichtbar bleibt
+      setTimeout(() => {
+        const popupRect = popup.getBoundingClientRect();
+        const btnRect = filterIcon.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        // Wenn unten abgeschnitten, nach oben anzeigen
+        if (popupRect.bottom > viewportHeight && popupRect.height < btnRect.top) {
+          popup.style.top = 'auto';
+          popup.style.bottom = '100%';
+        } else {
+          popup.style.top = '100%';
+          popup.style.bottom = 'auto';
+        }
+        // Wenn rechts abgeschnitten, nach links verschieben
+        if (popupRect.right > viewportWidth) {
+          const overflow = popupRect.right - viewportWidth + 8;
+          popup.style.left = `-${overflow}px`;
+        } else {
+          popup.style.left = '0';
+        }
+        // Card-Container und Tabelle so hoch machen, dass Popup immer Platz hat
+        const card = document.querySelector('.card');
+        const table = document.getElementById('spoolTable');
+        if (card) {
+          const cardRect = card.getBoundingClientRect();
+          const popupBottom = popupRect.top + popupRect.height;
+          const cardBottom = cardRect.top + cardRect.height;
+          if (popupBottom > cardBottom) {
+            const diff = popupBottom - cardRect.top + 24; // etwas Puffer
+            card.style.minHeight = diff + 'px';
+            if (table) table.style.minHeight = (diff - (cardRect.height - table.offsetHeight)) + 'px';
+          }
+        }
+      }, 0);
 
       // Stoppe Event-Propagation im Popup, damit Klicks im Popup nicht "nach oben" wandern
-      popup.onclick = (event) => {
-        event.stopPropagation();
-      };
+      popup.addEventListener('mousedown', function(e) { e.stopPropagation(); });
 
       // Temporäre Filterwerte
       let tempFilter = filters[key] || '';
@@ -462,6 +506,7 @@
 
       // Funktion zum Übernehmen und Anwenden der Filter
       function applyTempFilterAndClose() {
+        // Filter erst jetzt übernehmen
         if (getColumnFilterType(key) === 'range') {
           if (!rangeFilters[key]) rangeFilters[key] = {};
           rangeFilters[key].min.value = tempRange.min;
@@ -471,6 +516,7 @@
         }
         applyFilters();
         popup.style.display = 'none';
+        resetCardMinHeight();
       }
 
       // Schließen-Button oben rechts
@@ -578,6 +624,11 @@
           minSpan.textContent = minInput.value + ' g';
           tempRange.min = minInput.value;
           updateRangeBar();
+          // Filter sofort anwenden
+          if (!rangeFilters[key]) rangeFilters[key] = {};
+          rangeFilters[key].min.value = tempRange.min;
+          rangeFilters[key].max.value = tempRange.max;
+          applyFilters();
         };
         maxInput.oninput = () => {
           if (parseInt(maxInput.value) < parseInt(minInput.value)) {
@@ -586,6 +637,11 @@
           maxSpan.textContent = maxInput.value + ' g';
           tempRange.max = maxInput.value;
           updateRangeBar();
+          // Filter sofort anwenden
+          if (!rangeFilters[key]) rangeFilters[key] = {};
+          rangeFilters[key].min.value = tempRange.min;
+          rangeFilters[key].max.value = tempRange.max;
+          applyFilters();
         };
 
         // Initiale Balken-Position
@@ -598,21 +654,110 @@
         const label = document.createElement('label');
         label.textContent = key;
         popup.appendChild(label);
-        const select = document.createElement('select');
-        select.innerHTML = '<option value="">Alle</option>';
-        [...new Set(data.map(row => row[key] || ''))].sort().forEach(val => {
-          const option = document.createElement('option');
-          option.value = val;
-          option.textContent = val;
-          select.appendChild(option);
+        // Checkboxen für jede Option
+        const optionsWrapper = document.createElement('div');
+        optionsWrapper.style.display = 'flex';
+        optionsWrapper.style.flexDirection = 'column';
+        optionsWrapper.style.gap = '8px';
+        optionsWrapper.style.whiteSpace = 'normal';
+        const uniqueVals = [...new Set(originalData.map(row => row[key] || ''))].filter(v => v !== '').sort();
+        // Alle-Checkbox
+        const allCheckboxLabel = document.createElement('label');
+        allCheckboxLabel.style.fontWeight = 'bold';
+        const allCheckbox = document.createElement('input');
+        allCheckbox.type = 'checkbox';
+        allCheckbox.style.marginRight = '6px';
+        allCheckbox.onclick = (e) => e.stopPropagation();
+        allCheckboxLabel.appendChild(allCheckbox);
+        allCheckboxLabel.appendChild(document.createTextNode('Alle'));
+        optionsWrapper.appendChild(allCheckboxLabel);
+        // Einzeloptionen
+        const optionCheckboxes = [];
+        uniqueVals.forEach(val => {
+          const optLabel = document.createElement('label');
+          optLabel.style.display = 'flex';
+          optLabel.style.alignItems = 'center';
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.value = val;
+          cb.style.marginRight = '6px';
+          cb.onclick = (e) => e.stopPropagation();
+          optLabel.onclick = (e) => e.stopPropagation();
+          optLabel.appendChild(cb);
+          optLabel.appendChild(document.createTextNode(val));
+          optionsWrapper.appendChild(optLabel);
+          optionCheckboxes.push(cb);
         });
-        select.value = tempFilter;
-        select.onchange = () => { tempFilter = select.value; };
-        popup.appendChild(select);
-      }
+        // Vorbelegen
+        if (Array.isArray(tempFilter)) {
+          optionCheckboxes.forEach(cb => {
+            cb.checked = tempFilter.includes(cb.value);
+          });
+        } else if (tempFilter) {
+          optionCheckboxes.forEach(cb => {
+            cb.checked = tempFilter === cb.value;
+          });
+        } else {
+          // Standard: alle Haken
+          optionCheckboxes.forEach(cb => { cb.checked = true; });
+        }
+        // Alle-Checkbox Status setzen
+        const updateAllCheckbox = () => {
+          const checkedCount = optionCheckboxes.filter(cb => cb.checked).length;
+          if (checkedCount === optionCheckboxes.length) {
+            allCheckbox.checked = true;
+            allCheckbox.indeterminate = false;
+          } else if (checkedCount === 0) {
+            allCheckbox.checked = false;
+            allCheckbox.indeterminate = false;
+          } else {
+            allCheckbox.checked = false;
+            allCheckbox.indeterminate = true;
+          }
+        };
+        updateAllCheckbox();
+        // Checkboxen-Handler: nur tempFilter aktualisieren
+        optionCheckboxes.forEach(cb => {
+          cb.onchange = () => {
+            updateAllCheckbox();
+            const selected = optionCheckboxes.filter(c => c.checked).map(c => c.value);
+            if (selected.length === 0) {
+              tempFilter = [];
+            } else if (selected.length === optionCheckboxes.length) {
+              tempFilter = '';
+            } else {
+              tempFilter = selected;
+            }
+          };
+        });
+        // Alle-Checkbox-Handler: nur tempFilter aktualisieren
+        allCheckbox.onchange = () => {
+          const checked = allCheckbox.checked;
+          optionCheckboxes.forEach(cb => { cb.checked = checked; });
+          updateAllCheckbox();
+          tempFilter = checked ? '' : [];
+        };
+        popup.appendChild(optionsWrapper);
 
-      // Speichere die Funktion und temporären Werte am Popup für den Outside-Click-Handler
-      popup._applyTempFilterAndClose = applyTempFilterAndClose;
+        // Dynamische Breite: Passe die Popup-Breite an das längste Label an
+        setTimeout(() => {
+          let maxWidth = 0;
+          popup.querySelectorAll('label').forEach(label => {
+            // Temporär auf auto setzen, um echte Breite zu messen
+            label.style.width = 'auto';
+            const w = label.scrollWidth;
+            if (w > maxWidth) maxWidth = w;
+          });
+          // 40px Padding addieren (links+rechts)
+          popup.style.minWidth = (maxWidth + 40) + 'px';
+        }, 0);
+
+        // Filter beim Schließen (auch außerhalb-Klick) übernehmen
+        popup._applyTempFilterAndClose = applyTempFilterAndClose;
+
+        // Alle anderen offenen Popups schließen
+        document.querySelectorAll('.filter-popup').forEach(p => { if (p !== e.target.closest('.filter-toggle').querySelector('.filter-popup')) p.style.display = 'none'; });
+      }
     }
 
     function isFilterActive() {
@@ -623,7 +768,14 @@
     function applyFilters() {
       const data = originalData.filter(row => {
         for (let key in filters) {
-          if (filters[key] && row[key] !== filters[key]) return false;
+          if (filters[key]) {
+            if (Array.isArray(filters[key])) {
+              if (filters[key].length === 0) return false;
+              if (!filters[key].includes(row[key])) return false;
+            } else {
+              if (row[key] !== filters[key]) return false;
+            }
+          }
         }
         for (let key in rangeFilters) {
           const val = parseFloat(row[key]);
@@ -757,7 +909,7 @@
           inner.style.flexDirection = 'column';
           inner.style.alignItems = 'stretch';
           inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
-          inner.onclick = (e) => { e.stopPropagation(); };
+          inner.onclick = (e) => e.stopPropagation();
           // Titel
           const titleDiv = document.createElement('div');
           titleDiv.style.fontWeight = 'bold';
@@ -1037,54 +1189,52 @@
         document.getElementById('loader').style.display = 'none';
       });
 
-    // Globaler Klick-Listener zum Schließen des Filter-Popups beim Klick außerhalb
-    if (!window._popupOutsideClickListenerAdded) {
-      document.addEventListener('mousedown', function(event) {
-        // Suche alle offenen Popups (falls mehrere)
-        document.querySelectorAll('.filter-popup[style*="display: block"]').forEach(openPopup => {
-          if (!openPopup.contains(event.target)) {
-            // Übernehme die temporären Werte und schließe das Popup
-            if (typeof openPopup._applyTempFilterAndClose === 'function') {
-              openPopup._applyTempFilterAndClose();
-            } else {
-              openPopup.style.display = 'none';
-            }
-          }
-        });
-      });
-      window._popupOutsideClickListenerAdded = true;
-    }
-
     // PDF-Export Funktionalität
     document.getElementById('printBtn').onclick = function() {
+      // Spool IDs aus der aktuell angezeigten Tabelle auslesen (vierte Spalte)
+      const tableBody = document.querySelector('#spoolTable tbody');
+      const visibleSpoolIds = new Set();
+      Array.from(tableBody.querySelectorAll('tr')).forEach(tr => {
+        const cells = tr.querySelectorAll('td');
+        if (cells.length >= 4) {
+          visibleSpoolIds.add(cells[3].textContent.trim());
+        }
+      });
       // Modal anzeigen
       const modal = document.getElementById('printModal');
       const rowsDiv = document.getElementById('printRows');
       rowsDiv.innerHTML = '';
-      // Zeilen holen (wie in Tabelle, aber nur mit Spool ID)
-      const filtered = originalData.filter(row => {
-        for (let key in filters) {
-          if (filters[key] && row[key] !== filters[key]) return false;
-        }
-        for (let key in rangeFilters) {
-          const val = parseFloat(row[key]);
-          if (isNaN(val)) return false;
-          const min = parseFloat(rangeFilters[key].min.value);
-          const max = parseFloat(rangeFilters[key].max.value);
-          if (val < min || val > max) return false;
-        }
-        return row['Spool ID'] && row['Spool ID'].trim() !== '';
-      });
+      // Zeilen holen: IMMER alle Zeilen mit Spool ID anzeigen, unabhängig von Filtern
+      const filtered = originalData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
       // Checkboxen für jede Zeile mit Spool ID
       filtered.forEach((row, idx) => {
         const label = document.createElement('label');
         label.style.display = 'flex';
         label.style.alignItems = 'center';
-        label.style.gap = '8px';
+        label.style.gap = '12px';
+        // Bildvorschau
+        const material = (row['Material'] || '').replace(/ /g, '%20');
+        const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
+        const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+        const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
+        const img = document.createElement('img');
+        img.src = imgUrl;
+        img.alt = 'Filament';
+        img.style.width = '38px';
+        img.style.height = '38px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '7px';
+        img.style.background = '#f6f6f6';
+        img.style.border = '1px solid #ddd';
+        img.onerror = () => { img.style.display = 'none'; };
+        label.appendChild(img);
+        // Checkbox
         const cb = document.createElement('input');
         cb.type = 'checkbox';
-        cb.checked = true;
+        // Haken nur, wenn Spool ID in der Tabelle sichtbar ist
+        cb.checked = visibleSpoolIds.has((row['Spool ID'] || '').trim());
         cb.value = idx;
+        cb.onclick = (e) => e.stopPropagation();
         label.appendChild(cb);
         // Zeilen-Text (z.B. Spool ID + Material + Farbe)
         let txt = row['Spool ID'] || '';
@@ -1107,20 +1257,8 @@
         alert('Bitte mindestens eine Position auswählen!');
         return;
       }
-      // Daten für PDF (nur Zeilen mit Spool ID)
-      const filtered = originalData.filter(row => {
-        for (let key in filters) {
-          if (filters[key] && row[key] !== filters[key]) return false;
-        }
-        for (let key in rangeFilters) {
-          const val = parseFloat(row[key]);
-          if (isNaN(val)) return false;
-          const min = parseFloat(rangeFilters[key].min.value);
-          const max = parseFloat(rangeFilters[key].max.value);
-          if (val < min || val > max) return false;
-        }
-        return row['Spool ID'] && row['Spool ID'].trim() !== '';
-      });
+      // Zeilen für PDF: gleiche Reihenfolge wie im Modal (alle mit Spool ID)
+      const filtered = originalData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
       const rows = selectedIdx.map(i => filtered[i]);
       // PDF erzeugen (Querformat)
       const { jsPDF } = window.jspdf;
@@ -1313,9 +1451,33 @@
       doc.text(dateText, pageWidth / 2, pageHeight - 4, { align: 'center' });
       
       const fileDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      doc.save('Filament Storage ${fileDate}.pdf');
+      doc.save(`Filament Storage ${fileDate}.pdf`);
       modal.style.display = 'none';
     };
+
+    // Globaler Klick-Listener zum Schließen des Filter-Popups beim Klick außerhalb
+    if (!window._popupOutsideClickListenerAdded) {
+      document.addEventListener('mousedown', function(event) {
+        document.querySelectorAll('.filter-popup[style*="display: block"]').forEach(openPopup => {
+          if (!openPopup.contains(event.target)) {
+            if (typeof openPopup._applyTempFilterAndClose === 'function') {
+              openPopup._applyTempFilterAndClose();
+            } else {
+              openPopup.style.display = 'none';
+            }
+          }
+        });
+      });
+      window._popupOutsideClickListenerAdded = true;
+    }
+
+    // Beim Schließen des Popups min-height zurücksetzen
+    function resetCardMinHeight() {
+      const card = document.querySelector('.card');
+      const table = document.getElementById('spoolTable');
+      if (card) card.style.minHeight = '';
+      if (table) table.style.minHeight = '';
+    }
   </script>
 </body>
 </html>
