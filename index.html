@@ -214,12 +214,43 @@
     <span id="loaderText" style="margin-left:24px;font-size:1.2rem;color:#0057b8;font-weight:bold;">Loading data from Google Sheets</span>
   </div>
   <div id="dataUpdatePopup" style="display:none;position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#0057b8;color:#fff;padding:12px 32px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,0.12);font-size:1.1rem;z-index:5000;font-weight:bold;transition:opacity 0.3s;opacity:0;">Data updated</div>
+  <!-- Link-Manager Modal -->
+  <div id="linkManagerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:5000;align-items:center;justify-content:center;">
+    <div style="background:#fff;padding:32px 28px 24px 28px;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:18px;min-width:340px;max-width:600px;max-height:90vh;overflow:auto;">
+      <h3 style="margin:0 0 8px 0;">Freigegebene Filter-Links</h3>
+      <div id="linkList"></div>
+      <div style="display:flex;gap:16px;justify-content:flex-end;margin-top:10px;">
+        <button id="createLinkBtn" style="padding:7px 18px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;">Create new link</button>
+        <button id="closeLinkManager" style="padding:7px 18px;border-radius:6px;border:none;background:#eee;color:#333;cursor:pointer;">Close</button>
+      </div>
+    </div>
+  </div>
+  <!-- Modal für Link-Erstellung (wird per JS befüllt) -->
+  <div id="createLinkModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:6000;align-items:center;justify-content:center;">
+    <form id="createLinkForm" style="background:#fff;padding:32px 28px 24px 28px;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:18px;min-width:520px;max-width:1100px;max-height:90vh;overflow:auto;">
+      <h3 style="margin:0 0 8px 0;">Welche Positionen sollen im Link sichtbar sein?</h3>
+      <div id="createLinkRows" style="display:flex;flex-direction:column;gap:6px;max-height:45vh;overflow:auto;"></div>
+      <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
+        <label style="font-weight:bold;">Name für den Link: <input type="text" id="createLinkName" style="margin-left:8px;padding:4px 8px;border-radius:5px;border:1px solid #ccc;" placeholder="Mein Filter-Link" required></label>
+      </div>
+      <div style="display:flex;gap:16px;justify-content:flex-end;margin-top:10px;">
+        <button type="button" id="createLinkCancel" style="padding:7px 18px;border-radius:6px;border:none;background:#eee;color:#333;cursor:pointer;">Cancel</button>
+        <button type="submit" style="padding:7px 18px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;">Create link</button>
+      </div>
+    </form>
+  </div>
   <div class="card">
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <h2 style="margin: 0;">Filament Storage</h2>
-      <button id="printBtn" title="Export Table as PDF" style="padding:5px 14px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;font-size:14px;">
-        Export Table
-      </button>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <button id="printBtn" title="Export Table as PDF" style="padding:5px 14px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;font-size:14px;">
+          Export Table
+        </button>
+        <button id="linkManagerBtn" title="Filter-Links verwalten" style="padding:5px 14px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><path d="M4 10.5V6.5C4 5.11929 5.11929 4 6.5 4H13.5C14.8807 4 16 5.11929 16 6.5V13.5C16 14.8807 14.8807 16 13.5 16H9.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16L6 16C5.44772 16 5 15.5523 5 15L5 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Links
+        </button>
+      </div>
     </div>
     <table id="spoolTable">
       <thead id="tableHead"></thead>
@@ -257,6 +288,7 @@
     let filters = {};
     let rangeFilters = {};
     let sortState = { key: null, asc: true };
+    let lockedFilters = null;
 
     const colorNameMap = {
       'Dark Blue': '#2d3d5c',
@@ -268,6 +300,214 @@
       'Plum': '#942e54',
       'Brown': '#9b8472',
     };
+
+    function getUrlParams() {
+      const params = {};
+      window.location.search.substring(1).split('&').forEach(pair => {
+        if (!pair) return;
+        const [key, value] = pair.split('=');
+        params[decodeURIComponent(key)] = decodeURIComponent(value || '');
+      });
+      return params;
+    }
+
+    function applyUrlFiltersAndLock() {
+      const params = getUrlParams();
+      lockedFilters = {};
+      for (const key in params) {
+        const colKey = Object.keys(originalData[0] || {}).find(k => k.toLowerCase() === key.toLowerCase());
+        if (colKey) {
+          const values = params[key].split(',');
+          filters[colKey] = values.length > 1 ? values : values[0];
+          lockedFilters[colKey] = filters[colKey];
+        }
+      }
+      if (Object.keys(lockedFilters).length > 0) {
+        applyFilters();
+        // Link-Manager ausblenden, wenn Locked Mode aktiv
+        const linkManagerBtn = document.getElementById('linkManagerBtn');
+        const linkManagerModal = document.getElementById('linkManagerModal');
+        if (linkManagerBtn) linkManagerBtn.style.display = 'none';
+        if (linkManagerModal) linkManagerModal.style.display = 'none';
+        // Export Table Button ausblenden
+        const printBtn = document.getElementById('printBtn');
+        if (printBtn) printBtn.style.display = 'none';
+      } else {
+        lockedFilters = null;
+        // Link-Manager wieder einblenden, wenn kein Locked Mode
+        const linkManagerBtn = document.getElementById('linkManagerBtn');
+        const linkManagerModal = document.getElementById('linkManagerModal');
+        if (linkManagerBtn) linkManagerBtn.style.display = '';
+        if (linkManagerModal) linkManagerModal.style.display = '';
+        // Export Table Button wieder einblenden
+        const printBtn = document.getElementById('printBtn');
+        if (printBtn) printBtn.style.display = '';
+      }
+    }
+
+    function getSavedLinks() {
+      return JSON.parse(localStorage.getItem('filterLinks') || '[]');
+    }
+    function saveLinks(links) {
+      localStorage.setItem('filterLinks', JSON.stringify(links));
+    }
+    function renderLinkList() {
+      const links = getSavedLinks();
+      const listDiv = document.getElementById('linkList');
+      if (!listDiv) return;
+      listDiv.innerHTML = '';
+      if (links.length === 0) {
+        listDiv.innerHTML = '<div style="color:#888;font-size:15px;">Noch keine Links gespeichert.</div>';
+        return;
+      }
+      links.forEach((link, idx) => {
+        const div = document.createElement('div');
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.gap = '12px';
+        div.style.marginBottom = '6px';
+        div.innerHTML = `<a href="${link.url}" target="_blank" style="color:#0057b8;font-weight:bold;text-decoration:underline;">${link.name || link.url}</a>`;
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.style.padding = '3px 10px';
+        delBtn.style.borderRadius = '5px';
+        delBtn.style.border = 'none';
+        delBtn.style.background = '#eee';
+        delBtn.style.color = '#333';
+        delBtn.style.cursor = 'pointer';
+        delBtn.onclick = () => {
+          links.splice(idx, 1);
+          saveLinks(links);
+          renderLinkList();
+        };
+        div.appendChild(delBtn);
+        listDiv.appendChild(div);
+      });
+    }
+    // Link-Manager Modal öffnen/schließen
+    document.getElementById('linkManagerBtn').onclick = function() {
+      renderLinkList();
+      document.getElementById('linkManagerModal').style.display = 'flex';
+    };
+    document.getElementById('closeLinkManager').onclick = function() {
+      document.getElementById('linkManagerModal').style.display = 'none';
+    };
+    // Link-Manager Modal auch mit ESC schließen
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modal = document.getElementById('linkManagerModal');
+        if (modal && modal.style.display === 'flex') modal.style.display = 'none';
+      }
+    });
+    // Link-Liste initial rendern
+    renderLinkList();
+
+    // Handler für 'Neuen Link erstellen' im Link-Manager-Modal
+    function setupCreateLinkBtnHandler() {
+      const createLinkBtn = document.getElementById('createLinkBtn');
+      if (!createLinkBtn) return;
+      createLinkBtn.onclick = function() {
+        // Modal wie beim PDF-Export anzeigen
+        const modal = document.getElementById('createLinkModal');
+        const rowsDiv = document.getElementById('createLinkRows');
+        rowsDiv.innerHTML = '';
+        // Sichtbare Spool IDs aus der aktuellen Tabelle
+        const tableBody = document.querySelector('#spoolTable tbody');
+        const visibleSpoolIds = new Set();
+        Array.from(tableBody.querySelectorAll('tr')).forEach(tr => {
+          const cells = tr.querySelectorAll('td');
+          if (cells.length >= 4) {
+            visibleSpoolIds.add(cells[3].textContent.trim());
+          }
+        });
+        // Zeilen holen: IMMER alle Zeilen mit Spool ID anzeigen
+        const filtered = originalData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
+        filtered.forEach((row, idx) => {
+          const label = document.createElement('label');
+          label.style.display = 'flex';
+          label.style.alignItems = 'center';
+          label.style.gap = '12px';
+          // Bildvorschau
+          const material = (row['Material'] || '').replace(/ /g, '%20');
+          const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
+          const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+          const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
+          const img = document.createElement('img');
+          img.src = imgUrl;
+          img.alt = 'Filament';
+          img.style.width = '38px';
+          img.style.height = '38px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '7px';
+          img.style.background = '#f6f6f6';
+          img.style.border = '1px solid #ddd';
+          img.onerror = () => { img.style.display = 'none'; };
+          label.appendChild(img);
+          // Checkbox
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          // Haken nur, wenn Spool ID in der Tabelle sichtbar ist
+          cb.checked = visibleSpoolIds.has((row['Spool ID'] || '').trim());
+          cb.value = idx;
+          cb.onclick = (e) => e.stopPropagation();
+          label.appendChild(cb);
+          // Zeilen-Text (z.B. Spool ID + Material + Farbe)
+          let txt = row['Spool ID'] || '';
+          if (row['Material']) txt += ' | ' + row['Material'];
+          if (row['Farbe'] || row['Color']) txt += ' | ' + (row['Farbe'] || row['Color']);
+          label.appendChild(document.createTextNode(txt));
+          rowsDiv.appendChild(label);
+        });
+        // Name-Feld
+        document.getElementById('createLinkName').value = '';
+        modal.style.display = 'flex';
+        // Cancel-Button
+        document.getElementById('createLinkCancel').onclick = function() {
+          modal.style.display = 'none';
+        };
+        // Submit-Handler
+        document.getElementById('createLinkForm').onsubmit = async function(e) {
+          e.preventDefault();
+          const checkboxes = Array.from(document.querySelectorAll('#createLinkRows input[type=checkbox]'));
+          const selectedIdx = checkboxes.filter(cb => cb.checked).map(cb => parseInt(cb.value));
+          if (selectedIdx.length === 0) {
+            alert('Bitte wähle mindestens eine Position aus!');
+            return;
+          }
+          // Zeilen für Link: gleiche Reihenfolge wie im Modal (alle mit Spool ID)
+          const filteredRows = originalData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
+          const selectedSpoolIds = selectedIdx.map(i => filteredRows[i]['Spool ID']);
+          const params = [];
+          if (selectedSpoolIds.length > 0) {
+            params.push(encodeURIComponent('Spool ID') + '=' + encodeURIComponent(selectedSpoolIds.join(',')));
+          }
+          const url = window.location.origin + window.location.pathname + (params.length ? '?' + params.join('&') : '');
+          const name = document.getElementById('createLinkName').value.trim() || url;
+          let shortUrl = url;
+          try {
+            const resp = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(url));
+            const txt = await resp.text();
+            if (resp.ok && txt.startsWith('http')) {
+              shortUrl = txt;
+            }
+          } catch (e) {}
+          // Speichern
+          if (name) {
+            const links = getSavedLinks();
+            links.push({ name, url: shortUrl });
+            saveLinks(links);
+            renderLinkList();
+          }
+          modal.style.display = 'none';
+        };
+      };
+    }
+    // Nach dem initialen Rendern und nach jedem Daten-Reload Handler setzen
+    document.addEventListener('DOMContentLoaded', setupCreateLinkBtnHandler);
+    // Auch nach jedem Daten-Reload sicherstellen
+    function afterDataReload() {
+      setupCreateLinkBtnHandler();
+    }
 
     function renderTable(data) {
       const tableHead = document.getElementById('tableHead');
@@ -301,8 +541,8 @@
           applyFilters();
         };
         th.appendChild(sortBtn);
-        // Filter-Button NUR wenn nicht Measured (g) oder Remaining (g)
-        if (k !== 'Measured (g)' && k !== 'Remaining (g)') {
+        // Filter-Button NUR wenn nicht lockedFilters aktiv und nicht Measured (g) oder Remaining (g)
+        if (!lockedFilters && k !== 'Measured (g)' && k !== 'Remaining (g)') {
           const chevronDownSVG = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline;vertical-align:middle;"><path d="M6 8L10 12L14 8" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
           const filterIcon = document.createElement('span');
           filterIcon.className = 'filter-toggle';
@@ -480,6 +720,7 @@
     }
 
     function toggleFilterPopup(e, key, data, userClick = false, forceOpen = false) {
+      if (lockedFilters) return; // Keine Filteränderung im Locked Mode
       const filterIcon = e.target.closest('.filter-toggle');
       const popup = filterIcon.querySelector('.filter-popup');
       const isOpen = popup.style.display === 'block';
@@ -797,6 +1038,9 @@
     }
 
     function applyFilters() {
+      if (lockedFilters) {
+        filters = { ...lockedFilters };
+      }
       const data = originalData.filter(row => {
         for (let key in filters) {
           if (filters[key]) {
@@ -1237,6 +1481,7 @@
           }
           originalData = data;
           renderTable(data);
+          applyUrlFiltersAndLock();
           applyFilters();
           const keys = Object.keys(data[0]);
           if (keys.length > 0) {
@@ -1248,6 +1493,9 @@
           if (showUpdatePopup && changed) {
             showDataUpdatePopup();
           }
+          // Nach jedem Laden der Daten: Link-Manager-Modal schließen
+          const linkManagerModal = document.getElementById('linkManagerModal');
+          if (linkManagerModal) linkManagerModal.style.display = 'none';
         })
         .catch((err) => {
           clearTimeout(timeout);
@@ -1574,6 +1822,12 @@
       if (card) card.style.minHeight = '';
       if (table) table.style.minHeight = '';
     }
+
+    // Stelle sicher, dass das Link-Manager-Modal beim Laden der Seite geschlossen ist
+    document.addEventListener('DOMContentLoaded', function() {
+      const linkManagerModal = document.getElementById('linkManagerModal');
+      if (linkManagerModal) linkManagerModal.style.display = 'none';
+    });
   </script>
 </body>
 </html>
