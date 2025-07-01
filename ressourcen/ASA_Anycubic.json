@@ -9,6 +9,12 @@
     "Heated Bed Temperature": "100-110℃",
     "Printing Speed": "40-60mm/s",
     "Cooling Time": "6-10s",
-    "Maximum Volumetric Flow Rate": "9-15mm/s"
+    "Maximum Volumetric Flow Rate": "9-15mm/s",
+    "Properties": [
+    "- Weather-resistant and high-temperature-resistant",
+    "- High toughness and impact resistance",
+    "- Superior quality with minimal odor",
+    "- Excellent stability"
+    ]
   }
 }
