@@ -9,6 +9,12 @@
     "Heated Bed Temperature": "50-60℃",
     "Printing Speed": "50-100mm/s",
     "Cooling Time": "5s",
-    "Maximum Volumetric Flow Rate": "15mm³/s"
+    "Maximum Volumetric Flow Rate": "15mm³/s",
+    "Properties": [
+  "- High toughness",
+  "- High precision and minimal shrinkage",
+  "- High compatibility",
+  "- Eco-friendly, biodegradable"
+]
   }
 }
