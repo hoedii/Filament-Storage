@@ -1254,32 +1254,7 @@
           infoCol.style.width = 'min(100%, 700px)';
           infoCol.style.maxWidth = '700px';
           // Produktlink
-          if (json.product_url) {
-            const link = document.createElement('a');
-            link.href = json.product_url;
-            link.target = '_blank';
-            link.style.display = 'inline-flex';
-            link.style.alignItems = 'center';
-            link.style.gap = '8px';
-            link.style.background = '#0057b8';
-            link.style.color = '#fff';
-            link.style.fontWeight = 'bold';
-            link.style.fontSize = '17px';
-            link.style.padding = '10px 22px';
-            link.style.borderRadius = '7px';
-            link.style.textDecoration = 'none';
-            link.style.marginBottom = '18px';
-            link.style.marginTop = '6px';
-            link.style.transition = 'background 0.2s';
-            link.onmouseover = () => { link.style.background = '#003e87'; };
-            link.onmouseout = () => { link.style.background = '#0057b8'; };
-            // Link-Icon (SVG)
-            const icon = document.createElement('span');
-            icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-            link.textContent = 'Produktlink';
-            link.appendChild(icon);
-            infoCol.appendChild(link);
-          }
+          // (Removed: if (json.product_url) { ... infoCol.appendChild(link); })
           // Technische Daten
           if (json.technical_data) {
             const table = document.createElement('table');
@@ -1349,7 +1324,7 @@
               infoCol.appendChild(propBox);
             }
           }
-          // Layout-Wrapper für Bild und Daten
+          // Layout-Wrapper for image and data
           const contentRow = document.createElement('div');
           contentRow.style.display = 'flex';
           contentRow.style.flexDirection = 'row';
@@ -1357,8 +1332,43 @@
           contentRow.style.alignItems = 'flex-start';
           contentRow.style.justifyContent = 'flex-start';
           contentRow.style.width = '100%';
-          contentRow.appendChild(img);
-          contentRow.appendChild(errorMsg);
+          // Image and product link column
+          const imageCol = document.createElement('div');
+          imageCol.style.display = 'flex';
+          imageCol.style.flexDirection = 'column';
+          imageCol.style.alignItems = 'center';
+          imageCol.style.justifyContent = 'flex-start';
+          imageCol.appendChild(img);
+          imageCol.appendChild(errorMsg);
+          // Product link below image, left-aligned
+          if (json.product_url) {
+            const link = document.createElement('a');
+            link.href = json.product_url;
+            link.target = '_blank';
+            link.style.display = 'inline-flex';
+            link.style.alignItems = 'center';
+            link.style.gap = '8px';
+            link.style.background = '#0057b8';
+            link.style.color = '#fff';
+            link.style.fontWeight = 'bold';
+            link.style.fontSize = '17px';
+            link.style.padding = '10px 22px';
+            link.style.borderRadius = '7px';
+            link.style.textDecoration = 'none';
+            link.style.marginBottom = '18px';
+            link.style.marginTop = '16px';
+            link.style.transition = 'background 0.2s';
+            link.style.alignSelf = 'flex-start';
+            link.onmouseover = () => { link.style.background = '#003e87'; };
+            link.onmouseout = () => { link.style.background = '#0057b8'; };
+            // Link icon (SVG)
+            const icon = document.createElement('span');
+            icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+            link.textContent = 'Product link';
+            link.appendChild(icon);
+            imageCol.appendChild(link);
+          }
+          contentRow.appendChild(imageCol);
           contentRow.appendChild(infoCol);
           // Zusammenbauen
           inner.appendChild(titleDiv);
@@ -1421,7 +1431,7 @@
             titleDiv.appendChild(nameDiv);
             titleDiv.appendChild(herstellerDiv);
           }
-          // Layout-Wrapper für Bild und Daten
+          // Layout-Wrapper for image and data
           const contentRow = document.createElement('div');
           contentRow.style.display = 'flex';
           contentRow.style.flexDirection = 'row';
@@ -1429,8 +1439,44 @@
           contentRow.style.alignItems = 'flex-start';
           contentRow.style.justifyContent = 'flex-start';
           contentRow.style.width = '100%';
-          contentRow.appendChild(img);
-          contentRow.appendChild(errorMsg);
+          // Image and product link column
+          const imageCol = document.createElement('div');
+          imageCol.style.display = 'flex';
+          imageCol.style.flexDirection = 'column';
+          imageCol.style.alignItems = 'center';
+          imageCol.style.justifyContent = 'flex-start';
+          imageCol.appendChild(img);
+          imageCol.appendChild(errorMsg);
+          // Product link below image, left-aligned
+          if (row.product_url) {
+            const link = document.createElement('a');
+            link.href = row.product_url;
+            link.target = '_blank';
+            link.style.display = 'inline-flex';
+            link.style.alignItems = 'center';
+            link.style.gap = '8px';
+            link.style.background = '#0057b8';
+            link.style.color = '#fff';
+            link.style.fontWeight = 'bold';
+            link.style.fontSize = '17px';
+            link.style.padding = '10px 22px';
+            link.style.borderRadius = '7px';
+            link.style.textDecoration = 'none';
+            link.style.marginBottom = '18px';
+            link.style.marginTop = '16px';
+            link.style.transition = 'background 0.2s';
+            link.style.alignSelf = 'flex-start';
+            link.onmouseover = () => { link.style.background = '#003e87'; };
+            link.onmouseout = () => { link.style.background = '#0057b8'; };
+            // Link icon (SVG)
+            const icon = document.createElement('span');
+            icon.innerHTML = `<svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>`;
+            link.textContent = 'Product link';
+            link.appendChild(icon);
+            imageCol.appendChild(link);
+          }
+          contentRow.appendChild(imageCol);
+          contentRow.appendChild(infoCol);
           // Zusammenbauen
           inner.appendChild(titleDiv);
           inner.appendChild(contentRow);
