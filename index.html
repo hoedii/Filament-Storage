@@ -204,6 +204,11 @@
       0%, 80%, 100% { transform: scale(0.7); opacity: 0.7; }
       40% { transform: scale(1.2); opacity: 1; }
     }
+
+    /* Custom blue checkboxes for popups (material selection) */
+    #printRows input[type="checkbox"], #createLinkRows input[type="checkbox"] {
+      accent-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -217,7 +222,7 @@
   <!-- Link-Manager Modal -->
   <div id="linkManagerModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:5000;align-items:center;justify-content:center;">
     <div style="background:#fff;padding:32px 28px 24px 28px;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:18px;min-width:340px;max-width:600px;max-height:90vh;overflow:auto;">
-      <h3 style="margin:0 0 8px 0;">Freigegebene Filter-Links</h3>
+      <h3 style="margin:0 0 8px 0;">Shared Filter Links</h3>
       <div id="linkList"></div>
       <div style="display:flex;gap:16px;justify-content:flex-end;margin-top:10px;">
         <button id="createLinkBtn" style="padding:7px 18px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;">Create new link</button>
@@ -228,10 +233,10 @@
   <!-- Modal für Link-Erstellung (wird per JS befüllt) -->
   <div id="createLinkModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:6000;align-items:center;justify-content:center;">
     <form id="createLinkForm" style="background:#fff;padding:32px 28px 24px 28px;border-radius:14px;box-shadow:0 2px 16px rgba(0,0,0,0.15);display:flex;flex-direction:column;gap:18px;min-width:520px;max-width:1100px;max-height:90vh;overflow:auto;">
-      <h3 style="margin:0 0 8px 0;">Welche Positionen sollen im Link sichtbar sein?</h3>
+      <h3 style="margin:0 0 8px 0;">Which positions should be visible in the link?</h3>
       <div id="createLinkRows" style="display:flex;flex-direction:column;gap:6px;max-height:45vh;overflow:auto;"></div>
       <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start;">
-        <label style="font-weight:bold;">Name für den Link: <input type="text" id="createLinkName" style="margin-left:8px;padding:4px 8px;border-radius:5px;border:1px solid #ccc;" placeholder="Mein Filter-Link" required></label>
+        <label style="font-weight:bold;">Name for the link: <input type="text" id="createLinkName" style="margin-left:8px;padding:4px 8px;border-radius:5px;border:1px solid #ccc;" placeholder="My filter link" required></label>
       </div>
       <div style="display:flex;gap:16px;justify-content:flex-end;margin-top:10px;">
         <button type="button" id="createLinkCancel" style="padding:7px 18px;border-radius:6px;border:none;background:#eee;color:#333;cursor:pointer;">Cancel</button>
@@ -357,7 +362,7 @@
       if (!listDiv) return;
       listDiv.innerHTML = '';
       if (links.length === 0) {
-        listDiv.innerHTML = '<div style="color:#888;font-size:15px;">Noch keine Links gespeichert.</div>';
+        listDiv.innerHTML = '<div style="color:#888;font-size:15px;">No links saved yet.</div>';
         return;
       }
       links.forEach((link, idx) => {
@@ -395,8 +400,22 @@
     // Link-Manager Modal auch mit ESC schließen
     window.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
-        const modal = document.getElementById('linkManagerModal');
-        if (modal && modal.style.display === 'flex') modal.style.display = 'none';
+        const modals = [
+          document.getElementById('linkManagerModal'),
+          document.getElementById('printModal'),
+          document.getElementById('createLinkModal'),
+          document.getElementById('filamentImageModal')
+        ];
+        modals.forEach(modal => {
+          if (modal && (modal.style.display === 'flex' || modal.style.display === 'block')) {
+            // For filamentImageModal, remove from DOM
+            if (modal.id === 'filamentImageModal') {
+              modal.remove();
+            } else {
+              modal.style.display = 'none';
+            }
+          }
+        });
       }
     });
     // Link-Liste initial rendern
@@ -471,7 +490,7 @@
           const checkboxes = Array.from(document.querySelectorAll('#createLinkRows input[type=checkbox]'));
           const selectedIdx = checkboxes.filter(cb => cb.checked).map(cb => parseInt(cb.value));
           if (selectedIdx.length === 0) {
-            alert('Bitte wähle mindestens eine Position aus!');
+            alert('Please select at least one position!');
             return;
           }
           // Zeilen für Link: gleiche Reihenfolge wie im Modal (alle mit Spool ID)
@@ -1267,6 +1286,7 @@
             table.style.marginTop = '10px';
             table.style.borderCollapse = 'collapse';
             Object.entries(json.technical_data).forEach(([k, v]) => {
+              if (k === 'Properties') return; // Skip Properties here
               const tr = document.createElement('tr');
               const tdKey = document.createElement('td');
               tdKey.textContent = k;
@@ -1281,6 +1301,52 @@
               table.appendChild(tr);
             });
             infoCol.appendChild(table);
+
+            // Material Properties highlighted section (English)
+            if (Array.isArray(json.technical_data.Properties) && json.technical_data.Properties.length > 0) {
+              const propBox = document.createElement('div');
+              propBox.style.background = '#f0f4f9';
+              propBox.style.border = '1.5px solid #b3c6e0';
+              propBox.style.borderRadius = '8px';
+              propBox.style.padding = '14px 18px 10px 18px';
+              propBox.style.marginTop = '18px';
+              propBox.style.marginBottom = '6px';
+              // Match width to technical data table
+              propBox.style.maxWidth = '700px';
+              propBox.style.width = 'min(100%, 700px)';
+
+              const propTitle = document.createElement('div');
+              propTitle.textContent = 'Material Properties';
+              propTitle.style.fontWeight = 'bold';
+              propTitle.style.fontSize = '1.1rem';
+              propTitle.style.marginBottom = '8px';
+              propBox.appendChild(propTitle);
+
+              const propList = document.createElement('ul');
+              propList.style.margin = '0';
+              propList.style.padding = '0 0 0 18px';
+              propList.style.listStyle = 'none';
+
+              json.technical_data.Properties.forEach(p => {
+                const li = document.createElement('li');
+                li.style.display = 'flex';
+                li.style.alignItems = 'flex-start';
+                li.style.gap = '8px';
+                li.style.marginBottom = '4px';
+                // Icon
+                const icon = document.createElement('span');
+                icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 10.5L9 14.5L15 7.5" stroke="#0057b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                icon.style.marginTop = '2px';
+                li.appendChild(icon);
+                // Text
+                const txt = document.createElement('span');
+                txt.textContent = p.replace(/^- /, '').trim();
+                li.appendChild(txt);
+                propList.appendChild(li);
+              });
+              propBox.appendChild(propList);
+              infoCol.appendChild(propBox);
+            }
           }
           // Layout-Wrapper für Bild und Daten
           const contentRow = document.createElement('div');
@@ -1828,6 +1894,36 @@
       const linkManagerModal = document.getElementById('linkManagerModal');
       if (linkManagerModal) linkManagerModal.style.display = 'none';
     });
+
+    // Enable closing printModal and createLinkModal by clicking outside the modal content
+    function setupModalOverlayClose(modalId, formId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.addEventListener('mousedown', function(e) {
+        // Only close if click is directly on the overlay, not inside the form
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      setupModalOverlayClose('printModal', 'printForm');
+      setupModalOverlayClose('createLinkModal', 'createLinkForm');
+      setupModalOverlayClose('linkManagerModal');
+    });
+
+    // Allow closing linkManagerModal by clicking outside the modal content
+    function setupModalOverlayClose(modalId) {
+      const modal = document.getElementById(modalId);
+      if (!modal) return;
+      modal.addEventListener('mousedown', function(e) {
+        // Only close if click is directly on the overlay, not inside the content
+        if (e.target === modal) {
+          modal.style.display = 'none';
+        }
+      });
+    }
   </script>
 </body>
 </html>
