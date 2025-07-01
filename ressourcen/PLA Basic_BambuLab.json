@@ -9,6 +9,12 @@
     "Heated Bed Temperature": "55-65℃",
     "Printing Speed": "50-200mm/s",
     "Cooling Time": "8s",
-    "Maximum Volumetric Flow Rate": "12mm/s"
+    "Maximum Volumetric Flow Rate": "12mm/s",
+    "Properties": [
+    "- Neat winding, no bubble",
+    "- Even filament diameter prevents clogging",
+    "- Eco-friendly, biodegradable",
+    "- High precision and accuracy"
+    ]
   }
 }
