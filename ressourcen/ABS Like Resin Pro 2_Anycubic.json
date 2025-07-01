@@ -15,6 +15,12 @@
     "Bottom Exposure Time": ">20-40 s",
     "Normal Exposure Time": "1.5–3 s (color screen 8 s)",
     "Resin Wash": "Alcohol",
-    "Shelf Life": "1.5 Year"
+    "Shelf Life": "1.5 Year",
+    "Properties": [
+    "- High strength and toughness",
+    "- High-fluidity with high print success rate",
+    "- Minimal odor, safe to print",
+    "- High-precision with low shrinkage rate"
+    ]
   }
 }
