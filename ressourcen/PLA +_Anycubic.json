@@ -11,10 +11,10 @@
     "Cooling Time": "5s",
     "Maximum Volumetric Flow Rate": "15mm³/s",
     "Properties": [
-  "- High toughness",
-  "- High precision and minimal shrinkage",
-  "- High compatibility",
-  "- Eco-friendly, biodegradable"
-]
+    "- High toughness",
+    "- High precision and minimal shrinkage",
+    "- High compatibility",
+    "- Eco-friendly, biodegradable"
+    ]
   }
 }
