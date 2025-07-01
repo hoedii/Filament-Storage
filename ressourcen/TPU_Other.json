@@ -9,6 +9,12 @@
     "Heated Bed Temperature": "50-60℃",
     "Printing Speed": "20mm/s",
     "Cooling Time": "8s",
-    "Maximum Volumetric Flow Rate": "12mm/s"
+    "Maximum Volumetric Flow Rate": "12mm/s",
+    "Properties": [
+    "- Rubber texture",
+    "- Excellent elasticity",
+    "- Comfortable to the touch",
+    "- Highly durable"
+    ]
   }
 }
