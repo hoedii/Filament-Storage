@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>Filament Storage</title>
@@ -226,7 +226,7 @@
       <div id="linkList"></div>
       <div style="display:flex;gap:16px;justify-content:flex-end;margin-top:10px;">
         <button id="createLinkBtn" style="padding:7px 18px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;">Create new link</button>
-        <button id="closeLinkManager" style="padding:7px 18px;border-radius:6px;border:none;background:#eee;color:#333;cursor:pointer;">Close</button>
+        <!-- Close-Button entfernt -->
       </div>
     </div>
   </div>
@@ -281,7 +281,7 @@
   </div>
 
   <footer style="text-align: center; margin-top: 40px;">
-    <span style="font-size: 12px; color: #888;">
+    <span id="footerText" style="font-size: 12px; color: #888;">
       © 2025 piodeer. All rights reserved. Created with
       <a href="https://github.com/hoedii/Filament-Storage" style="color: inherit; text-decoration: none;" target="_blank">Github</a>, Cursor & ChatGPT.
     </span>
@@ -316,8 +316,56 @@
       return params;
     }
 
-    function applyUrlFiltersAndLock() {
+    // Hilfsfunktion: Zufälligen Code generieren
+    function generateUniqueCode(length = 7) {
+      const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+      let code = '';
+      for (let i = 0; i < length; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+      }
+      return code;
+    }
+
+    // Hilfsfunktion: Globale Codes aus permissions-Datei laden
+    async function fetchGlobalPermissions() {
+      try {
+        const resp = await fetch('https://raw.githubusercontent.com/hoedii/Filament-Storage/main/permissions');
+        if (!resp.ok) return {};
+        return await resp.json();
+      } catch (e) {
+        return {};
+      }
+    }
+
+    async function applyUrlFiltersAndLock() {
       const params = getUrlParams();
+      const footer = document.getElementById('footerText');
+      if (params.link) {
+        // Lade permissions
+        const perms = await fetchGlobalPermissions();
+        const code = params.link;
+        if (perms[code]) {
+          // Locked Mode: Zeige nur die Spulen aus perms[code]
+          lockedFilters = { 'Spool ID': perms[code] };
+          filters = { 'Spool ID': perms[code] };
+          applyFilters();
+          // UI anpassen
+          const linkManagerBtn = document.getElementById('linkManagerBtn');
+          const linkManagerModal = document.getElementById('linkManagerModal');
+          if (linkManagerBtn) linkManagerBtn.style.display = 'none';
+          if (linkManagerModal) linkManagerModal.style.display = 'none';
+          const printBtn = document.getElementById('printBtn');
+          if (printBtn) printBtn.style.display = 'none';
+          // Footer ohne Link
+          if (footer) footer.innerHTML = '© 2025 piodeer. All rights reserved. Created with Github, Cursor & ChatGPT.';
+        } else {
+          // Kein Zugriff
+          document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-size:2rem;color:#b30000;font-weight:bold;">Access denied – The link code is not enabled.</div>';
+        }
+        return;
+      }
+      // Im normalen Modus Footer mit Link
+      if (footer) footer.innerHTML = '© 2025 piodeer. All rights reserved. Created with <a href="https://github.com/hoedii/Filament-Storage" style="color: inherit; text-decoration: none;" target="_blank">Github</a>, Cursor & ChatGPT.';
       lockedFilters = {};
       for (const key in params) {
         const colKey = Object.keys(originalData[0] || {}).find(k => k.toLowerCase() === key.toLowerCase());
@@ -329,22 +377,18 @@
       }
       if (Object.keys(lockedFilters).length > 0) {
         applyFilters();
-        // Link-Manager ausblenden, wenn Locked Mode aktiv
         const linkManagerBtn = document.getElementById('linkManagerBtn');
         const linkManagerModal = document.getElementById('linkManagerModal');
         if (linkManagerBtn) linkManagerBtn.style.display = 'none';
         if (linkManagerModal) linkManagerModal.style.display = 'none';
-        // Export Table Button ausblenden
         const printBtn = document.getElementById('printBtn');
         if (printBtn) printBtn.style.display = 'none';
       } else {
         lockedFilters = null;
-        // Link-Manager wieder einblenden, wenn kein Locked Mode
         const linkManagerBtn = document.getElementById('linkManagerBtn');
         const linkManagerModal = document.getElementById('linkManagerModal');
         if (linkManagerBtn) linkManagerBtn.style.display = '';
         if (linkManagerModal) linkManagerModal.style.display = '';
-        // Export Table Button wieder einblenden
         const printBtn = document.getElementById('printBtn');
         if (printBtn) printBtn.style.display = '';
       }
@@ -363,74 +407,233 @@
       listDiv.innerHTML = '';
       if (links.length === 0) {
         listDiv.innerHTML = '<div style="color:#888;font-size:15px;">No links saved yet.</div>';
-        return;
       }
-      links.forEach((link, idx) => {
-        const div = document.createElement('div');
-        div.style.display = 'flex';
-        div.style.alignItems = 'center';
-        div.style.gap = '12px';
-        div.style.marginBottom = '6px';
-        div.innerHTML = `<a href="${link.url}" target="_blank" style="color:#0057b8;font-weight:bold;text-decoration:underline;">${link.name || link.url}</a>`;
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Delete';
-        delBtn.style.padding = '3px 10px';
-        delBtn.style.borderRadius = '5px';
-        delBtn.style.border = 'none';
-        delBtn.style.background = '#eee';
-        delBtn.style.color = '#333';
-        delBtn.style.cursor = 'pointer';
-        delBtn.onclick = () => {
-          links.splice(idx, 1);
-          saveLinks(links);
-          renderLinkList();
-        };
-        div.appendChild(delBtn);
-        listDiv.appendChild(div);
+      // Prüfe globale Codes
+      fetchGlobalPermissions().then(globalPerms => {
+        // Lokale Links
+        links.forEach((link, idx) => {
+          const div = document.createElement('div');
+          div.style.display = 'flex';
+          div.style.alignItems = 'center';
+          div.style.gap = '12px';
+          div.style.marginBottom = '6px';
+          let status = 'local';
+          if (link.code && globalPerms[link.code]) status = 'global';
+          const url = window.location.origin + window.location.pathname + '?link=' + encodeURIComponent(link.code);
+          div.innerHTML = `<a href="${url}" target="_blank" style="color:#0057b8;font-weight:bold;text-decoration:underline;">${link.name || link.code}</a>` +
+            `<span style="font-size:12px;color:${status==='global'?'#1a7f37':'#b86a00'};font-weight:bold;">${status==='global'?'Global':'Local'}</span>`;
+          // Copy-Button für lokale Links (JSON)
+          if (status === 'local') {
+            const copyBtn = document.createElement('button');
+            copyBtn.textContent = 'Copy as JSON';
+            copyBtn.style.padding = '3px 10px';
+            copyBtn.style.borderRadius = '5px';
+            copyBtn.style.border = 'none';
+            copyBtn.style.background = '#0057b8';
+            copyBtn.style.color = '#fff';
+            copyBtn.style.fontWeight = 'bold';
+            copyBtn.style.cursor = 'pointer';
+            copyBtn.style.fontSize = '13px';
+            copyBtn.onclick = function() {
+              const json = `"${link.code}": [${(link.spools||[]).map(s => '"'+s+'"').join(', ')}],`;
+              navigator.clipboard.writeText(json);
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => { copyBtn.textContent = 'Copy as JSON'; }, 1200);
+            };
+            div.appendChild(copyBtn);
+          }
+          // Copy-Button für globale Links (nur URL)
+          if (status === 'global') {
+            const copyUrlBtn = document.createElement('button');
+            copyUrlBtn.textContent = 'Copy URL';
+            copyUrlBtn.style.padding = '3px 10px';
+            copyUrlBtn.style.borderRadius = '5px';
+            copyUrlBtn.style.border = 'none';
+            copyUrlBtn.style.background = '#0057b8';
+            copyUrlBtn.style.color = '#fff';
+            copyUrlBtn.style.fontWeight = 'bold';
+            copyUrlBtn.style.cursor = 'pointer';
+            copyUrlBtn.style.fontSize = '13px';
+            copyUrlBtn.onclick = function() {
+              navigator.clipboard.writeText(url);
+              copyUrlBtn.textContent = 'Copied!';
+              setTimeout(() => { copyUrlBtn.textContent = 'Copy URL'; }, 1200);
+            };
+            div.appendChild(copyUrlBtn);
+          }
+          const delBtn = document.createElement('button');
+          delBtn.textContent = 'Delete';
+          delBtn.style.padding = '3px 10px';
+          delBtn.style.borderRadius = '5px';
+          delBtn.style.border = 'none';
+          delBtn.style.background = '#eee';
+          delBtn.style.color = '#333';
+          delBtn.style.cursor = 'pointer';
+          delBtn.onclick = () => {
+            links.splice(idx, 1);
+            saveLinks(links);
+            renderLinkList();
+          };
+          div.appendChild(delBtn);
+          listDiv.appendChild(div);
+        });
+        // Globale Links aus permissions
+        const globalCodes = Object.keys(globalPerms);
+        if (globalCodes.length > 0) {
+          // Trennlinie
+          const sep = document.createElement('hr');
+          sep.style.margin = '18px 0 12px 0';
+          sep.style.border = 'none';
+          sep.style.borderTop = '1.5px solid #b3c6e0';
+          listDiv.appendChild(sep);
+          // Überschrift
+          const globalTitle = document.createElement('div');
+          globalTitle.style.fontWeight = 'bold';
+          globalTitle.style.fontSize = '15px';
+          globalTitle.style.marginBottom = '10px';
+          globalTitle.style.color = '#0057b8';
+          globalTitle.innerHTML = 'Active global Links (<a href="https://github.com/hoedii/Filament-Storage/blob/main/permissions" target="_blank" style="color:#0057b8;text-decoration:underline;">GitHub</a>)';
+          listDiv.appendChild(globalTitle);
+          // Liste der globalen Links
+          globalCodes.forEach(code => {
+            const spools = globalPerms[code];
+            const div = document.createElement('div');
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            div.style.gap = '10px';
+            div.style.marginBottom = '7px';
+            div.style.flexWrap = 'wrap';
+            // Link
+            const url = window.location.origin + window.location.pathname + '?link=' + encodeURIComponent(code);
+            const linkA = document.createElement('a');
+            linkA.href = url;
+            linkA.target = '_blank';
+            linkA.textContent = code;
+            linkA.style.color = '#1a7f37';
+            linkA.style.fontWeight = 'bold';
+            linkA.style.textDecoration = 'underline';
+            linkA.title = 'Locked-Link open';
+            div.appendChild(linkA);
+            // Info-Button für Spool IDs
+            const infoBtn = document.createElement('span');
+            infoBtn.textContent = 'i';
+            infoBtn.style.display = 'inline-flex';
+            infoBtn.style.alignItems = 'center';
+            infoBtn.style.justifyContent = 'center';
+            infoBtn.style.width = '18px';
+            infoBtn.style.height = '18px';
+            infoBtn.style.fontSize = '13px';
+            infoBtn.style.background = '#eee';
+            infoBtn.style.color = '#888';
+            infoBtn.style.borderRadius = '50%';
+            infoBtn.style.cursor = 'pointer';
+            infoBtn.style.border = 'none';
+            infoBtn.style.userSelect = 'none';
+            infoBtn.title = 'Show Spool IDs';
+            infoBtn.onclick = function(e) {
+              e.stopPropagation();
+              showSpoolIdsPopup(code, spools, infoBtn);
+            };
+            div.appendChild(infoBtn);
+            // Copy-Button für JSON-Format
+            const copyBtn = document.createElement('button');
+            copyBtn.textContent = 'Copy';
+            copyBtn.style.padding = '3px 10px';
+            copyBtn.style.borderRadius = '5px';
+            copyBtn.style.border = 'none';
+            copyBtn.style.background = '#0057b8';
+            copyBtn.style.color = '#fff';
+            copyBtn.style.fontWeight = 'bold';
+            copyBtn.style.cursor = 'pointer';
+            copyBtn.style.fontSize = '13px';
+            copyBtn.onclick = function() {
+              const json = `"${code}": [${spools.map(s => '"'+s+'"').join(', ')}],`;
+              navigator.clipboard.writeText(json);
+              copyBtn.textContent = 'Copied!';
+              setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1200);
+            };
+            div.appendChild(copyBtn);
+            listDiv.appendChild(div);
+          });
+        }
       });
     }
     // Link-Manager Modal öffnen/schließen
-    document.getElementById('linkManagerBtn').onclick = function() {
-      renderLinkList();
-      document.getElementById('linkManagerModal').style.display = 'flex';
-    };
-    document.getElementById('closeLinkManager').onclick = function() {
-      document.getElementById('linkManagerModal').style.display = 'none';
-    };
-    // Link-Manager Modal auch mit ESC schließen
-    window.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') {
-        const modals = [
-          document.getElementById('linkManagerModal'),
-          document.getElementById('printModal'),
-          document.getElementById('createLinkModal'),
-          document.getElementById('filamentImageModal')
-        ];
-        modals.forEach(modal => {
-          if (modal && (modal.style.display === 'flex' || modal.style.display === 'block')) {
-            // For filamentImageModal, remove from DOM
-            if (modal.id === 'filamentImageModal') {
-              modal.remove();
-            } else {
-              modal.style.display = 'none';
-            }
-          }
-        });
+    (function() {
+      const linkManagerModal = document.getElementById('linkManagerModal');
+      if (!linkManagerModal) return;
+      // Modal-Styles für schlichtes, großes, übersichtliches Popup
+      linkManagerModal.style.position = 'fixed';
+      linkManagerModal.style.top = '0';
+      linkManagerModal.style.left = '0';
+      linkManagerModal.style.width = '100vw';
+      linkManagerModal.style.height = '100vh';
+      linkManagerModal.style.background = 'rgba(0,0,0,0.13)';
+      linkManagerModal.style.zIndex = '10001';
+      linkManagerModal.style.display = 'none';
+      linkManagerModal.style.alignItems = 'center';
+      linkManagerModal.style.justifyContent = 'center';
+      // Inner Box
+      const inner = linkManagerModal.firstElementChild;
+      if (inner) {
+        inner.style.background = '#fff';
+        inner.style.padding = '38px 44px 32px 44px';
+        inner.style.borderRadius = '18px';
+        inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
+        inner.style.minWidth = '340px';
+        inner.style.maxWidth = '98vw';
+        inner.style.width = 'min(520px, 98vw)';
+        inner.style.maxHeight = '80vh';
+        inner.style.overflowY = 'auto';
+        inner.style.display = 'flex';
+        inner.style.flexDirection = 'column';
+        inner.style.alignItems = 'center';
+        inner.style.position = 'relative';
+        // Überschrift groß
+        const h3 = inner.querySelector('h3');
+        if (h3) {
+          h3.style.fontSize = '1.35rem';
+          h3.style.fontWeight = 'bold';
+          h3.style.margin = '0 0 18px 0';
+          h3.style.textAlign = 'center';
+        }
+        // Entferne ggf. vorhandenen Close-Button
+        const closeBtn = inner.querySelector('.linkManagerCloseBtn');
+        if (closeBtn) closeBtn.remove();
+        // Link-Liste Abstand
+        const linkList = inner.querySelector('#linkList');
+        if (linkList) {
+          linkList.style.width = '100%';
+          linkList.style.maxWidth = '420px';
+          linkList.style.margin = '0 auto 18px auto';
+          linkList.style.display = 'flex';
+          linkList.style.flexDirection = 'column';
+          linkList.style.gap = '10px';
+        }
+        // Button-Bereich Abstand
+        const btnRow = Array.from(inner.querySelectorAll('div')).find(d => d.querySelector('#createLinkBtn'));
+        if (btnRow) {
+          btnRow.style.marginTop = '24px';
+          btnRow.style.gap = '18px';
+          btnRow.style.display = 'flex';
+          btnRow.style.justifyContent = 'flex-end';
+        }
       }
-    });
-    // Link-Liste initial rendern
-    renderLinkList();
+    })();
+    // ... existing code ...
 
-    // Handler für 'Neuen Link erstellen' im Link-Manager-Modal
+    // Angepasst: Handler für 'Neuen Link erstellen' im Link-Manager-Modal
     function setupCreateLinkBtnHandler() {
       const createLinkBtn = document.getElementById('createLinkBtn');
       if (!createLinkBtn) return;
       createLinkBtn.onclick = function() {
+        // Schließe das Shared Filter Links Popup, wenn es offen ist
+        const linkManagerModal = document.getElementById('linkManagerModal');
+        if (linkManagerModal) linkManagerModal.style.display = 'none';
         // Modal wie beim PDF-Export anzeigen
         const modal = document.getElementById('createLinkModal');
         const rowsDiv = document.getElementById('createLinkRows');
         rowsDiv.innerHTML = '';
-        // Sichtbare Spool IDs aus der aktuellen Tabelle
         const tableBody = document.querySelector('#spoolTable tbody');
         const visibleSpoolIds = new Set();
         Array.from(tableBody.querySelectorAll('tr')).forEach(tr => {
@@ -439,14 +642,12 @@
             visibleSpoolIds.add(cells[3].textContent.trim());
           }
         });
-        // Zeilen holen: IMMER alle Zeilen mit Spool ID anzeigen
         const filtered = originalData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
         filtered.forEach((row, idx) => {
           const label = document.createElement('label');
           label.style.display = 'flex';
           label.style.alignItems = 'center';
           label.style.gap = '12px';
-          // Bildvorschau
           const material = (row['Material'] || '').replace(/ /g, '%20');
           const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
           const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
@@ -462,29 +663,34 @@
           img.style.border = '1px solid #ddd';
           img.onerror = () => { img.style.display = 'none'; };
           label.appendChild(img);
-          // Checkbox
           const cb = document.createElement('input');
           cb.type = 'checkbox';
-          // Haken nur, wenn Spool ID in der Tabelle sichtbar ist
           cb.checked = visibleSpoolIds.has((row['Spool ID'] || '').trim());
           cb.value = idx;
           cb.onclick = (e) => e.stopPropagation();
           label.appendChild(cb);
-          // Zeilen-Text (z.B. Spool ID + Material + Farbe)
           let txt = row['Spool ID'] || '';
           if (row['Material']) txt += ' | ' + row['Material'];
           if (row['Farbe'] || row['Color']) txt += ' | ' + (row['Farbe'] || row['Color']);
           label.appendChild(document.createTextNode(txt));
           rowsDiv.appendChild(label);
         });
-        // Name-Feld
         document.getElementById('createLinkName').value = '';
+        // Hinweistext für globale Freischaltung
+        let info = document.getElementById('createLinkInfo');
+        if (!info) {
+          info = document.createElement('div');
+          info.id = 'createLinkInfo';
+          info.style.color = '#b86a00';
+          info.style.fontSize = '14px';
+          info.style.margin = '10px 0 0 0';
+          document.getElementById('createLinkForm').insertBefore(info, document.getElementById('createLinkForm').lastElementChild);
+        }
+        info.textContent = 'Note: The link is only globally available after being added to the permissions file!';
         modal.style.display = 'flex';
-        // Cancel-Button
         document.getElementById('createLinkCancel').onclick = function() {
           modal.style.display = 'none';
         };
-        // Submit-Handler
         document.getElementById('createLinkForm').onsubmit = async function(e) {
           e.preventDefault();
           const checkboxes = Array.from(document.querySelectorAll('#createLinkRows input[type=checkbox]'));
@@ -493,30 +699,20 @@
             alert('Please select at least one position!');
             return;
           }
-          // Zeilen für Link: gleiche Reihenfolge wie im Modal (alle mit Spool ID)
           const filteredRows = originalData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
           const selectedSpoolIds = selectedIdx.map(i => filteredRows[i]['Spool ID']);
-          const params = [];
-          if (selectedSpoolIds.length > 0) {
-            params.push(encodeURIComponent('Spool ID') + '=' + encodeURIComponent(selectedSpoolIds.join(',')));
-          }
-          const url = window.location.origin + window.location.pathname + (params.length ? '?' + params.join('&') : '');
-          const name = document.getElementById('createLinkName').value.trim() || url;
-          let shortUrl = url;
-          try {
-            const resp = await fetch('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(url));
-            const txt = await resp.text();
-            if (resp.ok && txt.startsWith('http')) {
-              shortUrl = txt;
-            }
-          } catch (e) {}
-          // Speichern
-          if (name) {
-            const links = getSavedLinks();
-            links.push({ name, url: shortUrl });
-            saveLinks(links);
-            renderLinkList();
-          }
+          // Code generieren
+          let code = generateUniqueCode();
+          // Prüfe, ob Code schon lokal existiert
+          const links = getSavedLinks();
+          while (links.some(l => l.code === code)) code = generateUniqueCode();
+          const name = document.getElementById('createLinkName').value.trim() || code;
+          // Speichere lokal: name, code, spools, status
+          links.push({ name, code, spools: selectedSpoolIds, status: 'local' });
+          saveLinks(links);
+          renderLinkList();
+          // Popup mit Code und Spulen-IDs anzeigen
+          showLinkCodePopup(code, selectedSpoolIds);
           modal.style.display = 'none';
         };
       };
@@ -549,7 +745,7 @@
         sortBtn.style.background = 'none';
         sortBtn.style.border = 'none';
         sortBtn.style.cursor = 'pointer';
-        sortBtn.title = 'Sortieren';
+        sortBtn.title = 'Sort';
         sortBtn.onclick = () => {
           if (sortState.key === k) {
             sortState.asc = !sortState.asc;
@@ -718,7 +914,7 @@
                   infoBtn.style.cursor = 'pointer';
                   infoBtn.style.border = 'none';
                   infoBtn.style.userSelect = 'none';
-                  infoBtn.title = 'Filamentbild/Einstellungen anzeigen';
+                  infoBtn.title = 'Show filament image/settings';
                   infoBtn.onclick = (e) => {
                     e.stopPropagation();
                     showFilamentImage(row);
@@ -960,7 +1156,7 @@
         allCheckbox.style.marginRight = '6px';
         allCheckbox.onclick = (e) => e.stopPropagation();
         allCheckboxLabel.appendChild(allCheckbox);
-        allCheckboxLabel.appendChild(document.createTextNode('Alle'));
+        allCheckboxLabel.appendChild(document.createTextNode('All'));
         optionsWrapper.appendChild(allCheckboxLabel);
         // Einzeloptionen
         const optionCheckboxes = [];
@@ -1594,6 +1790,7 @@
             changed = true;
           }
           originalData = data;
+          window.originalData = data;
           renderTable(data);
           applyUrlFiltersAndLock();
           applyFilters();
@@ -1972,6 +2169,265 @@
         }
       });
     }
+
+    // Popup für Link-Code und Spulen-IDs (Copy-Button kopiert JSON-Format)
+    function showLinkCodePopup(code, spools) {
+      // Remove existing popup
+      let popup = document.getElementById('linkCodePopup');
+      if (popup) popup.remove();
+      popup = document.createElement('div');
+      popup.id = 'linkCodePopup';
+      popup.style.position = 'fixed';
+      popup.style.top = '0';
+      popup.style.left = '0';
+      popup.style.width = '100vw';
+      popup.style.height = '100vh';
+      popup.style.background = 'rgba(0,0,0,0.25)';
+      popup.style.zIndex = '9999';
+      popup.style.display = 'flex';
+      popup.style.alignItems = 'center';
+      popup.style.justifyContent = 'center';
+      popup.onclick = function(e) { if (e.target === popup) popup.remove(); };
+
+      const inner = document.createElement('div');
+      inner.style.background = '#fff';
+      inner.style.padding = '32px 28px 24px 28px';
+      inner.style.borderRadius = '14px';
+      inner.style.boxShadow = '0 2px 16px rgba(0,0,0,0.15)';
+      inner.style.display = 'flex';
+      inner.style.flexDirection = 'column';
+      inner.style.gap = '18px';
+      inner.style.minWidth = '340px';
+      inner.style.maxWidth = '90vw';
+      inner.style.maxHeight = '90vh';
+      inner.style.overflow = 'auto';
+      inner.onclick = function(e) { e.stopPropagation(); };
+
+      // Close Button
+      const closeBtn = document.createElement('span');
+      closeBtn.textContent = '×';
+      closeBtn.style.position = 'absolute';
+      closeBtn.style.top = '18px';
+      closeBtn.style.right = '32px';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.fontSize = '2rem';
+      closeBtn.style.color = '#888';
+      closeBtn.title = 'Close';
+      closeBtn.onclick = () => popup.remove();
+      inner.appendChild(closeBtn);
+
+      // Title
+      const title = document.createElement('h3');
+      title.textContent = 'Link Code & Spool IDs';
+      title.style.margin = '0 0 10px 0';
+      inner.appendChild(title);
+
+      // Text area with code and spools (for display only)
+      const textArea = document.createElement('textarea');
+      textArea.readOnly = true;
+      textArea.style.width = '100%';
+      textArea.style.height = '120px';
+      textArea.style.fontSize = '1.1rem';
+      textArea.style.padding = '10px';
+      textArea.style.borderRadius = '7px';
+      textArea.style.border = '1.5px solid #b3c6e0';
+      textArea.style.background = '#fafdff';
+      textArea.value = `Code: ${code}\nSpool IDs: [${spools.map(s => '"'+s+'"').join(', ')}]`;
+      inner.appendChild(textArea);
+
+      // Copy Button (JSON format)
+      const copyBtn = document.createElement('button');
+      copyBtn.textContent = 'Copy as JSON';
+      copyBtn.style.padding = '7px 18px';
+      copyBtn.style.borderRadius = '6px';
+      copyBtn.style.border = 'none';
+      copyBtn.style.background = '#0057b8';
+      copyBtn.style.color = '#fff';
+      copyBtn.style.fontWeight = 'bold';
+      copyBtn.style.cursor = 'pointer';
+      copyBtn.style.fontSize = '15px';
+      copyBtn.onclick = function() {
+        const json = `"${code}": [${spools.map(s => '"'+s+'"').join(', ')}],`;
+        navigator.clipboard.writeText(json);
+        copyBtn.textContent = 'Copied!';
+        setTimeout(() => { copyBtn.textContent = 'Copy as JSON'; }, 1200);
+      };
+      inner.appendChild(copyBtn);
+
+      // Note
+      const info = document.createElement('div');
+      info.textContent = 'Add this code and spool IDs to the permissions file on GitHub to activate the link globally.';
+      info.style.color = '#b86a00';
+      info.style.fontSize = '14px';
+      info.style.marginTop = '10px';
+      inner.appendChild(info);
+
+      popup.appendChild(inner);
+      document.body.appendChild(popup);
+    }
+
+    // Popup für Spool IDs bei globalen Links (englisch, Copy-Button kopiert JSON-Format)
+    function showSpoolIdsPopup(code, spools, anchorEl) {
+      // Remove existing popup
+      let old = document.getElementById('spoolIdsPopup');
+      if (old) old.remove();
+      // Overlay
+      const popup = document.createElement('div');
+      popup.id = 'spoolIdsPopup';
+      popup.style.position = 'fixed';
+      popup.style.top = '0';
+      popup.style.left = '0';
+      popup.style.width = '100vw';
+      popup.style.height = '100vh';
+      popup.style.background = 'rgba(0,0,0,0.13)';
+      popup.style.zIndex = '10001';
+      popup.style.display = 'flex';
+      popup.style.alignItems = 'center';
+      popup.style.justifyContent = 'center';
+      popup.onclick = function(e) { if (e.target === popup) popup.remove(); };
+      // Inner Box
+      const inner = document.createElement('div');
+      inner.style.position = 'relative';
+      inner.style.background = '#fff';
+      inner.style.padding = '38px 44px 32px 44px';
+      inner.style.borderRadius = '18px';
+      inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
+      inner.style.minWidth = '340px';
+      inner.style.maxWidth = '98vw';
+      inner.style.width = 'min(520px, 98vw)';
+      inner.style.maxHeight = '80vh';
+      inner.style.overflowY = 'auto';
+      inner.style.display = 'flex';
+      inner.style.flexDirection = 'column';
+      inner.style.alignItems = 'center';
+      inner.onclick = function(e) { e.stopPropagation(); };
+      // Close Button
+      const closeBtn = document.createElement('span');
+      closeBtn.textContent = '×';
+      closeBtn.style.position = 'absolute';
+      closeBtn.style.top = '18px';
+      closeBtn.style.right = '28px';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.style.fontSize = '2.1rem';
+      closeBtn.style.color = '#888';
+      closeBtn.title = 'Close';
+      closeBtn.onclick = () => popup.remove();
+      inner.appendChild(closeBtn);
+      // Title
+      const title = document.createElement('div');
+      title.textContent = 'Spool IDs for code:';
+      title.style.fontWeight = 'bold';
+      title.style.fontSize = '1.35rem';
+      title.style.marginBottom = '6px';
+      title.style.textAlign = 'center';
+      inner.appendChild(title);
+      // Code large
+      const codeDiv = document.createElement('div');
+      codeDiv.textContent = code;
+      codeDiv.style.fontSize = '1.15rem';
+      codeDiv.style.fontWeight = 'bold';
+      codeDiv.style.letterSpacing = '1px';
+      codeDiv.style.color = '#0057b8';
+      codeDiv.style.marginBottom = '18px';
+      codeDiv.style.textAlign = 'center';
+      inner.appendChild(codeDiv);
+      // Spool IDs as list with images
+      const list = document.createElement('ul');
+      list.style.margin = '0 0 18px 0';
+      list.style.padding = '0';
+      list.style.listStyle = 'none';
+      list.style.width = '100%';
+      list.style.maxWidth = '420px';
+      list.style.display = 'flex';
+      list.style.flexDirection = 'column';
+      list.style.alignItems = 'center';
+      // Für jede Spool ID: Bild + ID
+      spools.forEach(id => {
+        // Suche die Zeile im originalData
+        const row = (window.originalData || []).find(r => (r['Spool ID'] || '').trim() === id);
+        const li = document.createElement('li');
+        li.style.fontSize = '1.13rem';
+        li.style.background = '#fafdff';
+        li.style.border = '1.5px solid #b3c6e0';
+        li.style.borderRadius = '7px';
+        li.style.padding = '7px 18px';
+        li.style.margin = '4px 0';
+        li.style.width = '100%';
+        li.style.textAlign = 'center';
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        li.style.gap = '14px';
+        // Bild
+        if (row) {
+          const material = (row['Material'] || '').replace(/ /g, '%20');
+          const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
+          const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+          const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
+          const img = document.createElement('img');
+          img.src = imgUrl;
+          img.alt = 'Spool';
+          img.style.width = '32px';
+          img.style.height = '32px';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '7px';
+          img.style.background = '#f6f6f6';
+          img.style.border = '1px solid #ddd';
+          img.style.marginRight = '8px';
+          img.onerror = () => { img.style.display = 'none'; };
+          li.appendChild(img);
+        }
+        // ID-Text
+        const idSpan = document.createElement('span');
+        idSpan.textContent = id;
+        idSpan.style.flex = '1';
+        idSpan.style.textAlign = 'left';
+        li.appendChild(idSpan);
+        list.appendChild(li);
+      });
+      inner.appendChild(list);
+      // (Copy as JSON Button entfernt)
+      // Copy Button (JSON format)
+      // const copyBtn = document.createElement('button');
+      // copyBtn.textContent = 'Copy as JSON';
+      // copyBtn.style.padding = '10px 28px';
+      // copyBtn.style.borderRadius = '8px';
+      // copyBtn.style.border = 'none';
+      // copyBtn.style.background = '#0057b8';
+      // copyBtn.style.color = '#fff';
+      // copyBtn.style.fontWeight = 'bold';
+      // copyBtn.style.cursor = 'pointer';
+      // copyBtn.style.fontSize = '1.1rem';
+      // copyBtn.style.marginTop = '10px';
+      // copyBtn.onclick = function() {
+      //   const json = `"${code}": [${spools.map(s => '"'+s+'"').join(', ')}],`;
+      //   navigator.clipboard.writeText(json);
+      //   copyBtn.textContent = 'Copied!';
+      //   setTimeout(() => { copyBtn.textContent = 'Copy as JSON'; }, 1200);
+      // };
+      // inner.appendChild(copyBtn);
+      popup.appendChild(inner);
+      document.body.appendChild(popup);
+    }
+
+    // ... existing code ...
+    // Stelle sicher, dass der Link-Manager-Button das Modal öffnet
+    const linkManagerBtn = document.getElementById('linkManagerBtn');
+    if (linkManagerBtn) {
+      linkManagerBtn.onclick = function() {
+        renderLinkList();
+        const modal = document.getElementById('linkManagerModal');
+        if (modal) modal.style.display = 'flex';
+      };
+    }
+    // ... existing code ...
+
+    // Automatische Aktualisierung der globalen Codes/Links alle 60 Sekunden
+    setInterval(() => {
+      const modal = document.getElementById('linkManagerModal');
+      if (modal && (modal.style.display === 'flex' || modal.style.display === 'block')) {
+        renderLinkList();
+      }
+    }, 60000);
   </script>
 </body>
 </html>
