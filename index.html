@@ -209,6 +209,10 @@
     #printRows input[type="checkbox"], #createLinkRows input[type="checkbox"] {
       accent-color: var(--primary);
     }
+    /* Custom blue checkboxes for summary options in print modal */
+    #printForm input[type="checkbox"] {
+      accent-color: var(--primary);
+    }
 
     .blurred {
       background: #fff !important;
@@ -545,24 +549,11 @@
               showSpoolIdsPopup(code, spools, infoBtn);
             };
             div.appendChild(infoBtn);
-            // Copy-Button für JSON-Format
-            const copyBtn = document.createElement('button');
-            copyBtn.textContent = 'Copy';
-            copyBtn.style.padding = '3px 10px';
-            copyBtn.style.borderRadius = '5px';
-            copyBtn.style.border = 'none';
-            copyBtn.style.background = '#0057b8';
-            copyBtn.style.color = '#fff';
-            copyBtn.style.fontWeight = 'bold';
-            copyBtn.style.cursor = 'pointer';
-            copyBtn.style.fontSize = '13px';
-            copyBtn.onclick = function() {
-              const json = `"${code}": [${spools.map(s => '"'+s+'"').join(', ')}],`;
-              navigator.clipboard.writeText(json);
-              copyBtn.textContent = 'Copied!';
-              setTimeout(() => { copyBtn.textContent = 'Copy'; }, 1200);
-            };
-            div.appendChild(copyBtn);
+            // Copy-Button für JSON-Format (entfernt)
+            // const copyBtn = document.createElement('button');
+            // copyBtn.textContent = 'Copy';
+            // ... entfernt ...
+            // div.appendChild(copyBtn);
             listDiv.appendChild(div);
           });
         }
@@ -2242,7 +2233,7 @@
       textArea.style.borderRadius = '7px';
       textArea.style.border = '1.5px solid #b3c6e0';
       textArea.style.background = '#fafdff';
-      textArea.value = `Code: ${code}\nSpool IDs: [${spools.map(s => '"'+s+'"').join(', ')}]`;
+      textArea.value = `"${code}": [${spools.map(s => '"'+s+'"').join(', ')}],`;
       inner.appendChild(textArea);
 
       // Copy Button (JSON format)
