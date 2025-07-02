@@ -2430,8 +2430,8 @@
       }
     }, 60000);
 
-    // Passcode protection for normal mode (not locked mode)
-    document.addEventListener('DOMContentLoaded', function() {
+    // --- Passcode Modal als Funktion auslagern ---
+    function showPasscodeModal() {
       const PASSCODE = 'z8l3,FS9rstT';
       const COOKIE_NAME = 'site_access';
       function getCookie(name) {
@@ -2453,9 +2453,9 @@
         const params = new URLSearchParams(window.location.search);
         return params.has('link');
       }
-      // Only show passcode modal if not locked mode and no cookie
-      if (!isLockedMode() && getCookie(COOKIE_NAME) !== '1') {
-        // Create modal overlay with solid white background
+      // Nur anzeigen, wenn nicht locked mode und kein Cookie
+      if (!isLockedMode() && getCookie(COOKIE_NAME) !== '1' && !document.getElementById('passcodeModal')) {
+        // Modal overlay mit solidem weißen Hintergrund
         const modal = document.createElement('div');
         modal.id = 'passcodeModal';
         modal.style.position = 'fixed';
@@ -2567,7 +2567,55 @@
         });
         observer.observe(document.body, { childList: true });
       }
+    }
+
+    // --- Alt+Shift+L Shortcut zum erneuten Anfordern des Passworts ---
+    document.addEventListener('keydown', function(e) {
+      if (e.altKey && e.shiftKey && e.key.toLowerCase() === 'l') {
+        // Cookie löschen
+        document.cookie = 'site_access=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        // Modal erneut anzeigen
+        showPasscodeModal();
+        e.preventDefault();
+      }
     });
+
+    // ... existing code ...
+    // Ersetze die bisherige Passcode-Modal-Logik durch Aufruf von showPasscodeModal
+
+    document.addEventListener('DOMContentLoaded', function() {
+      showPasscodeModal();
+    });
+    // ... existing code ...
+
+    // ... existing code ...
+    // --- ESC schließt alle Modals außer das Passcode-Modal ---
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+        const modalsToClose = [
+          'printModal',
+          'createLinkModal',
+          'linkManagerModal',
+          'filamentImageModal',
+          'linkCodePopup',
+          'spoolIdsPopup'
+        ];
+        modalsToClose.forEach(id => {
+          const el = document.getElementById(id);
+          if (el && (el.style.display === 'flex' || el.style.display === 'block')) {
+            el.style.display = 'none';
+          }
+        });
+        // Für dynamisch erzeugte Modals (filamentImageModal, linkCodePopup, spoolIdsPopup): ggf. entfernen
+        ['filamentImageModal','linkCodePopup','spoolIdsPopup'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el && el.parentNode) {
+            el.parentNode.removeChild(el);
+          }
+        });
+      }
+    });
+    // ... existing code ...
   </script>
 </body>
 </html>
