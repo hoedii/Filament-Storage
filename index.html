@@ -222,6 +222,11 @@
       user-select: none;
       transition: none;
     }
+
+    /* Blaue Checkboxen in Filter-Popups */
+    .filter-popup input[type="checkbox"] {
+      accent-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -1148,7 +1153,7 @@
         optionsWrapper.style.flexDirection = 'column';
         optionsWrapper.style.gap = '8px';
         optionsWrapper.style.whiteSpace = 'normal';
-        const uniqueVals = [...new Set(originalData.map(row => row[key] || ''))].filter(v => v !== '').sort();
+        const uniqueVals = [...new Set(originalData.map(row => row[key] || ''))].sort();
         // Alle-Checkbox
         const allCheckboxLabel = document.createElement('label');
         allCheckboxLabel.style.fontWeight = 'bold';
@@ -1172,6 +1177,7 @@
           cb.onclick = (e) => e.stopPropagation();
           optLabel.onclick = (e) => e.stopPropagation();
           optLabel.appendChild(cb);
+          // Zeige leeres Feld als '(leer)' an
           optLabel.appendChild(document.createTextNode(val));
           optionsWrapper.appendChild(optLabel);
           optionCheckboxes.push(cb);
