@@ -1638,6 +1638,8 @@
           historyContent.style.flex = '1';
           historyContent.style.display = 'flex';
           historyContent.style.flexDirection = 'column';
+          historyContent.style.overflowY = 'auto'; // Scrollbar für die rechte Spalte
+          historyContent.style.maxHeight = '400px'; // Begrenzte Höhe, um Scrollbar zu aktivieren
           
           // Loading indicator
           const loadingDiv = document.createElement('div');
@@ -1852,6 +1854,8 @@
           historyContent.style.flex = '1';
           historyContent.style.display = 'flex';
           historyContent.style.flexDirection = 'column';
+          historyContent.style.overflowY = 'auto'; // Scrollbar für die rechte Spalte
+          historyContent.style.maxHeight = '400px'; // Begrenzte Höhe, um Scrollbar zu aktivieren
           
           // Error message in history content
           const historyErrorDiv = document.createElement('div');
@@ -2942,15 +2946,21 @@
         return dateB - dateA;
       });
       
-      // Show only the last 8 measurements for sidebar
-      const last8Measurements = materialHistory.slice(-8);
-      
       // Ensure container takes full available height
       container.style.flex = '1';
       container.style.minHeight = '0';
+      container.style.display = 'flex';
+      container.style.flexDirection = 'column';
       
-      // Last 8 measurements list
-      last8Measurements.forEach((item, index) => {
+      // Create a scrollable container for measurements
+      const measurementsContainer = document.createElement('div');
+      measurementsContainer.style.overflowY = 'auto';
+      measurementsContainer.style.flex = '1'; // Take available space
+      measurementsContainer.style.paddingRight = '5px';
+      container.appendChild(measurementsContainer);
+      
+      // Show all measurements instead of limiting to 8
+      materialHistory.forEach((item, index) => {
         const measurementCard = document.createElement('div');
         measurementCard.style.background = '#fff';
         measurementCard.style.border = '1px solid #e0e6ed';
@@ -2985,14 +2995,10 @@
         
         measurementCard.appendChild(dateDiv);
         measurementCard.appendChild(weightDiv);
-        container.appendChild(measurementCard);
+        measurementsContainer.appendChild(measurementCard);
       });
       
-      // Add flexible spacer to push content to the top and utilize full height
-      const spacer = document.createElement('div');
-      spacer.style.flex = '1';
-      spacer.style.minHeight = '0';
-      container.appendChild(spacer);
+      // No need for spacer as we're using a scrollable container
     }
     
     // Function to add first measurement date to sidebar
@@ -3014,16 +3020,23 @@
           day: '2-digit'
         });
         
-        // Create date element for sidebar center
+        // Create date element for sidebar that stays fixed at the bottom
         const firstDateDiv = document.createElement('div');
         firstDateDiv.style.textAlign = 'center';
-        firstDateDiv.style.padding = '8px';
-        firstDateDiv.style.marginTop = '12px';
-        firstDateDiv.style.fontSize = '0.75rem';
-        firstDateDiv.style.color = '#888';
+        firstDateDiv.style.padding = '5px'; // Reduced padding
+        firstDateDiv.style.marginTop = 'auto'; // Push to bottom of container
+        firstDateDiv.style.fontSize = '0.8rem';
+        firstDateDiv.style.color = '#666';
         firstDateDiv.style.fontStyle = 'italic';
-        firstDateDiv.style.opacity = '0.8';
+        firstDateDiv.style.opacity = '1';
         firstDateDiv.style.borderTop = '1px solid #e0e6ed';
+        firstDateDiv.style.backgroundColor = '#fff'; // Ensure background is visible
+        firstDateDiv.style.position = 'sticky'; // Make it stick to the bottom
+        firstDateDiv.style.bottom = '0'; // Position at the bottom
+        firstDateDiv.style.zIndex = '10'; // Ensure it's above scrollable content
+        firstDateDiv.style.width = '100%'; // Ensure it takes full width
+        firstDateDiv.style.height = 'auto'; // Only as high as needed for the text
+        firstDateDiv.style.boxShadow = '0 -2px 5px rgba(0,0,0,0.05)'; // Add subtle shadow for separation
         firstDateDiv.textContent = `First measurement: ${formattedFirstDate}`;
         
         // Add to the sidebar container instead of the main popup
