@@ -15,6 +15,14 @@
       --bg: #fff;
     }
 
+    /* Dark mode variable overrides */
+    body.dark {
+      --accent: #0d1117;
+      --bg: #161b22;
+      --text: #e6edf3;
+      --border: #30363d;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -47,6 +55,9 @@
       overflow: hidden;
     }
 
+    /* Dark mode table tweaks */
+    body.dark table { background: var(--bg) !important; }
+
     th, td {
       padding: 10px 14px;
       border-bottom: 1px solid var(--border);
@@ -57,6 +68,10 @@
     th {
       background-color: #f8f9fa;
     }
+
+    /* Dark mode head/hover */
+    body.dark th { background-color: #0f1724 !important; color: var(--text); }
+    body.dark tr:hover td { background-color: #111827 !important; }
 
     tr:hover td {
       background-color: #f1f5fa;
@@ -74,6 +89,8 @@
       font-weight: bold;
       background: #f9f9f9;
     }
+
+    body.dark .summary-row { background: #0f1724; }
 
     .summary-row td {
       border: none;
@@ -110,6 +127,9 @@
       max-height: 80vh;
       overflow: auto;
     }
+
+    /* Dark mode popup override */
+    body.dark .filter-popup { background: #161b22 !important; border: 1.5px solid #30363d !important; color: var(--text) !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important; }
 
     .filter-popup label {
       display: block;
@@ -174,8 +194,8 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
+      0% { transform: rotate(0deg);} 
+      100% { transform: rotate(360deg);} 
     }
     .loader-dots {
       display: flex;
@@ -205,6 +225,10 @@
       40% { transform: scale(1.2); opacity: 1; }
     }
 
+    /* Dark mode loader background */
+    body.dark #loader { background: rgba(0,0,0,0.5) !important; }
+    body.dark #loaderText { color: #e6edf3 !important; }
+
     /* Custom blue checkboxes for popups (material selection) */
     #printRows input[type="checkbox"], #createLinkRows input[type="checkbox"] {
       accent-color: var(--primary);
@@ -227,6 +251,68 @@
     .filter-popup input[type="checkbox"] {
       accent-color: var(--primary);
     }
+
+    /* Dark mode inputs/selects */
+    body.dark input, body.dark select, body.dark textarea {
+      background: #0d1117 !important;
+      color: #e6edf3 !important;
+      border-color: #30363d !important;
+    }
+
+    /* Dark mode for Export and Links modals */
+    body.dark #printModal, body.dark #createLinkModal, body.dark #linkManagerModal {
+      background: rgba(0,0,0,0.5) !important;
+    }
+    body.dark #printModal form, body.dark #createLinkModal form, body.dark #linkManagerModal > div {
+      background: #161b22 !important;
+      color: var(--text) !important;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.6) !important;
+      border: 1px solid #30363d !important;
+    }
+    body.dark #printRows img, body.dark #createLinkRows img, body.dark #linkManagerModal img {
+      border-color: #30363d !important;
+      background: #0d1117 !important;
+    }
+    body.dark #printCancel, body.dark #createLinkCancel {
+      background: #2b3138 !important;
+      color: #e6edf3 !important;
+      border: 1px solid #30363d !important;
+    }
+    body.dark #linkList a { color: #58a6ff !important; }
+    body.dark #linkList button {
+      color: #e6edf3 !important;
+    }
+
+    /* Dark mode for info popups (image, link code, spool IDs, measurement history) */
+    body.dark #filamentImageModal, body.dark #linkCodePopup, body.dark #spoolIdsPopup, body.dark #measurementHistoryModal {
+      background: rgba(0,0,0,0.6) !important;
+    }
+    body.dark #filamentImageModal > div,
+    body.dark #linkCodePopup > div,
+    body.dark #spoolIdsPopup > div,
+    body.dark #measurementHistoryModal > div {
+      background: #161b22 !important;
+      color: var(--text) !important;
+      box-shadow: 0 6px 32px rgba(0,0,0,0.6) !important;
+      border: 1px solid #30363d !important;
+    }
+    body.dark #filamentImageModal table,
+    body.dark #measurementHistoryModal table {
+      background: #161b22 !important;
+    }
+    body.dark #filamentImageModal th,
+    body.dark #measurementHistoryModal th {
+      background: #0f1724 !important;
+      color: var(--text) !important;
+    }
+    body.dark #filamentImageModal td,
+    body.dark #measurementHistoryModal td,
+    body.dark #filamentImageModal th,
+    body.dark #measurementHistoryModal th {
+      border-color: #30363d !important;
+    }
+    body.dark #filamentImageModal a,
+    body.dark #measurementHistoryModal a { color: #58a6ff; }
   </style>
 </head>
 <body>
@@ -266,6 +352,8 @@
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <h2 style="margin: 0;">Filament Storage</h2>
       <div style="display:flex;gap:10px;align-items:center;">
+        <!-- Theme toggle button -->
+        <button id="themeToggle" title="Toggle Dark Mode" style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:14px;">Dark Mode</button>
         <button id="printBtn" title="Export Table as PDF" style="padding:5px 14px;border-radius:6px;border:none;background:#0057b8;color:#fff;font-weight:bold;cursor:pointer;font-size:14px;">
           Export Table
         </button>
@@ -312,6 +400,52 @@
     let rangeFilters = {};
     let sortState = { key: null, asc: true };
     let lockedFilters = null;
+
+    // Theme handling
+    (function setupTheme() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const initial = saved || (prefersDark ? 'dark' : 'light');
+      if (initial === 'dark') document.body.classList.add('dark');
+      const btn = document.getElementById('themeToggle');
+      function updateBtn() {
+        if (!btn) return;
+        btn.textContent = document.body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
+      }
+      function setTheme(mode) {
+        if (mode === 'dark') document.body.classList.add('dark');
+        else document.body.classList.remove('dark');
+        localStorage.setItem('theme', mode);
+        // Update passcode modal theme if it's open
+        const modal = document.getElementById('passcodeModal');
+        if (modal) {
+          const inner = modal.firstElementChild;
+          if (document.body.classList.contains('dark')) {
+            modal.style.background = '#0d1117';
+            if (inner) {
+              inner.style.background = '#161b22';
+              inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.6)';
+              inner.style.color = 'var(--text)';
+            }
+          } else {
+            modal.style.background = '#fff';
+            if (inner) {
+              inner.style.background = '#fff';
+              inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
+              inner.style.color = '';
+            }
+          }
+        }
+        updateBtn();
+      }
+      if (btn) {
+        btn.onclick = function() {
+          const toDark = !document.body.classList.contains('dark');
+          setTheme(toDark ? 'dark' : 'light');
+        };
+      }
+      updateBtn();
+    })();
 
     const colorNameMap = {
       'Dark Blue': '#2d3d5c',
@@ -1501,6 +1635,12 @@
               // Match width to technical data table
               propBox.style.maxWidth = '700px';
               propBox.style.width = 'min(100%, 700px)';
+              // Dark mode adjustments
+              if (document.body.classList.contains('dark')) {
+                propBox.style.background = 'var(--bg)';
+                propBox.style.border = '1.5px solid #30363d';
+                propBox.style.color = 'var(--text)';
+              }
 
               const propTitle = document.createElement('div');
               propTitle.textContent = 'Material Properties';
@@ -1598,6 +1738,12 @@
           historySidebar.style.display = 'flex';
           historySidebar.style.flexDirection = 'column';
           historySidebar.style.minHeight = '0';
+          // Dark mode adjustments
+          if (document.body.classList.contains('dark')) {
+            historySidebar.style.borderLeft = '1px solid #30363d';
+            historySidebar.style.backgroundColor = 'var(--bg)';
+            historySidebar.style.color = 'var(--text)';
+          }
           
           // Header für die Seitenleiste
           const historyHeader = document.createElement('div');
@@ -2687,6 +2833,13 @@
         inner.style.display = 'flex';
         inner.style.flexDirection = 'column';
         inner.style.alignItems = 'center';
+        // Dark mode adjustments
+        if (document.body.classList.contains('dark')) {
+          modal.style.background = '#0d1117';
+          inner.style.background = '#161b22';
+          inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.6)';
+          inner.style.color = 'var(--text)';
+        }
         // Title
         const title = document.createElement('h3');
         title.textContent = 'Enter Passcode or Link Code';
@@ -2968,6 +3121,12 @@
         measurementCard.style.padding = '10px';
         measurementCard.style.marginBottom = '8px';
         measurementCard.style.fontSize = '0.8rem';
+        // Dark mode adjustments
+        if (document.body.classList.contains('dark')) {
+          measurementCard.style.background = '#0f1724';
+          measurementCard.style.border = '1px solid #30363d';
+          measurementCard.style.color = 'var(--text)';
+        }
         
         // Date with year
         const timestamp = new Date(item['Timestamp'] || '');
@@ -3037,6 +3196,13 @@
         firstDateDiv.style.width = '100%'; // Ensure it takes full width
         firstDateDiv.style.height = 'auto'; // Only as high as needed for the text
         firstDateDiv.style.boxShadow = '0 -2px 5px rgba(0,0,0,0.05)'; // Add subtle shadow for separation
+        // Dark mode adjustments
+        if (document.body.classList.contains('dark')) {
+          firstDateDiv.style.color = '#9aa4af';
+          firstDateDiv.style.borderTop = '1px solid #30363d';
+          firstDateDiv.style.backgroundColor = 'var(--bg)';
+          firstDateDiv.style.boxShadow = '0 -2px 5px rgba(0,0,0,0.4)';
+        }
         firstDateDiv.textContent = `First measurement: ${formattedFirstDate}`;
         
         // Add to the sidebar container instead of the main popup
@@ -3141,6 +3307,12 @@
           historySection.style.backgroundColor = '#f8f9fa';
           historySection.style.borderRadius = '8px';
           historySection.style.border = '1px solid #dee2e6';
+          // Dark mode adjustments
+          if (document.body.classList.contains('dark')) {
+            historySection.style.backgroundColor = 'var(--bg)';
+            historySection.style.border = '1px solid #30363d';
+            historySection.style.color = 'var(--text)';
+          }
           
           // Title
           const historyTitle = document.createElement('h4');
@@ -3162,6 +3334,11 @@
           const headerRow = document.createElement('tr');
           headerRow.style.backgroundColor = '#e9ecef';
           headerRow.style.fontWeight = 'bold';
+          // Dark mode adjustments
+          if (document.body.classList.contains('dark')) {
+            headerRow.style.backgroundColor = '#0f1724';
+            headerRow.style.color = 'var(--text)';
+          }
           
           const headers = ['Datum', 'Spool ID', 'Material', 'Gewicht (g)'];
           headers.forEach(headerText => {
@@ -3423,6 +3600,11 @@
           const headerRow = document.createElement('tr');
           headerRow.style.backgroundColor = '#f8f9fa';
           headerRow.style.fontWeight = 'bold';
+          // Dark mode adjustments
+          if (document.body.classList.contains('dark')) {
+            headerRow.style.backgroundColor = '#0f1724';
+            headerRow.style.color = 'var(--text)';
+          }
           
           const headers = ['Date', 'Spool ID', 'Material', 'Weight (g)'];
           headers.forEach(headerText => {
