@@ -313,6 +313,35 @@
     }
     body.dark #filamentImageModal a,
     body.dark #measurementHistoryModal a { color: #58a6ff; }
+
+    /* Elegant dark mode enhancements */
+    body.dark .card {
+      border: 1px solid #30363d !important;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.35) !important;
+    }
+    body.dark th, body.dark td { border-color: #30363d !important; }
+    body.dark tr:hover td { background-color: #0f1724 !important; }
+
+    /* Refined inputs and placeholders */
+    body.dark ::placeholder { color: #9aa4af; }
+
+    /* Dark scrollbars (WebKit) */
+    body.dark *::-webkit-scrollbar { width: 10px; height: 10px; }
+    body.dark *::-webkit-scrollbar-track { background: #0d1117; border-radius: 8px; }
+    body.dark *::-webkit-scrollbar-thumb { background: #30363d; border-radius: 8px; border: 2px solid #0d1117; }
+    body.dark *::-webkit-scrollbar-thumb:hover { background: #3d444d; }
+
+    /* Dark scrollbars (Firefox) */
+    body.dark { scrollbar-color: #3d444d #0d1117; scrollbar-width: thin; }
+
+    /* Hide scrollbar but keep scroll for measurements sidebar */
+    .history-content { scrollbar-width: none; -ms-overflow-style: none; }
+    .history-content::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    /* Ensure nested scrolling container also hides scrollbar */
+    .history-content > div { scrollbar-width: none; -ms-overflow-style: none; }
+    .history-content > div::-webkit-scrollbar { width: 0; height: 0; display: none; }
+    /* Fallback: hide any descendant scrollbars */
+    .history-content *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
   </style>
 </head>
 <body>
