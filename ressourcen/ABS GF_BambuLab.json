@@ -20,8 +20,9 @@
   "ratings": {
     "impactStrength": 2,
     "stiffness": 3,
-    "budgetFriendly": 8,
+    "budgetFriendly": 7,
     "heatResistance": 3,
     "printability": 7
   }
 }
+
