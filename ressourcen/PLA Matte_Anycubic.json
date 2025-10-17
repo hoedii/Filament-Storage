@@ -18,10 +18,11 @@
     ]
   },
   "ratings": {
-    "impactStrength": 6,
-    "stiffness": 7,
-    "budgetFriendly": 9,
-    "heatResistance": 4,
-    "printability": 9
+    "impactStrength": 4,
+    "stiffness": 3,
+    "budgetFriendly": 10,
+    "heatResistance": 1,
+    "printability": 10
   }
 }
+
