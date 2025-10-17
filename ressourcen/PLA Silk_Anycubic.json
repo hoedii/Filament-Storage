@@ -16,5 +16,13 @@
     "- High compatibility with low shrinkage",
     "- Strong adhesion, bubble-free, more durable prints"
     ]
+  },
+  "ratings": {
+    "impactStrength": 4,
+    "stiffness": 3,
+    "budgetFriendly": 9,
+    "heatResistance": 1,
+    "printability": 10
   }
 }
+
