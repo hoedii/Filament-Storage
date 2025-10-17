@@ -16,5 +16,13 @@
     "- Superior quality with minimal odor",
     "- Excellent stability"
     ]
+  },
+  "ratings": {
+    "impactStrength": 6,
+    "stiffness": 2,
+    "budgetFriendly": 9,
+    "heatResistance": 3,
+    "printability": 6
   }
 }
+
