@@ -16,5 +16,13 @@
     "- High-toughness",
     "- Temperature-resist"
     ]
+},
+  "ratings": {
+    "impactStrength": 6,
+    "stiffness": 2,
+    "budgetFriendly": 10,
+    "heatResistance": 3,
+    "printability": 6
   }
 }
+
