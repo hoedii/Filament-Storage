@@ -16,5 +16,13 @@
     "- Can be stored for a long time",
     "- Eco-friendly and biodegradable"
     ]
+  },
+  "ratings": {
+    "impactStrength": 4,
+    "stiffness": 3,
+    "budgetFriendly": 9,
+    "heatResistance": 1,
+    "printability": 10
   }
 }
+
