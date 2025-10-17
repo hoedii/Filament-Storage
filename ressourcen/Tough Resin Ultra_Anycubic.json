@@ -22,5 +22,13 @@
     "- Bend resistance",
     "- Strong and versatile"
     ]
+  },
+  "ratings": {
+    "impactStrength": 8,
+    "stiffness": 5,
+    "budgetFriendly": 4,
+    "heatResistance": 4,
+    "printability": 7
   }
 }
+
