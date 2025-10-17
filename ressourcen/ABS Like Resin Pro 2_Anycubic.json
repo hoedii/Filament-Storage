@@ -3,25 +3,26 @@
   "product_url": "https://store.anycubic.com/products/abs-like-resin-pro-2",
   "technical_data": {
     "UV Wavelength": "365-405 nm",
-    "Elongation at Break": "30–40 %",
-    "Density": "1.1–1.2 g/cm³",
-    "Molding Shrinkage": "4.3-5.6 %",
-    "Viscosity": "300-400 cP·mPa·s",
-    "Flexural Strength": "40–50 MPa",
-    "Hardness": "82-84 D",
-    "Flexural Modulus": ">1000-1200 MPa",
-    "Tensile Strength": "35–45 MPa",
-    "Heat Deflection Temperature": ">60-65 ℃",
-    "Bottom Exposure Time": ">20-40 s",
-    "Normal Exposure Time": "1.5–3 s (color screen 8 s)",
+    "Elongation at Break": "30–40 %",
+    "Density": "1.1–1.2 g/cm³",
+    "Molding Shrinkage": "4.3-5.6 %",
+    "Viscosity": "300-400 cP·mPa·s",
+    "Flexural Strength": "40–50 MPa",
+    "Hardness": "82-84 D",
+    "Flexural Modulus": ">1000-1200 MPa",
+    "Tensile Strength": "35–45 MPa",
+    "Heat Deflection Temperature": ">60-65 ℃",
+    "Bottom Exposure Time": ">20-40 s",
+    "Normal Exposure Time": "1.5–3 s (color screen 8 s)",
     "Resin Wash": "Alcohol",
-    "Shelf Life": "1.5 Year",
+    "Shelf Life": "1.5 Year",
     "Properties": [
-    "- High strength and toughness",
-    "- High-fluidity with high print success rate",
-    "- Minimal odor, safe to print",
-    "- High-precision with low shrinkage rate"
+      "- High strength and toughness",
+      "- High-fluidity with high print success rate",
+      "- Minimal odor, safe to print",
+      "- High-precision with low shrinkage rate"
     ]
+  },
   "ratings": {
     "impactStrength": 7,
     "stiffness": 8,
@@ -30,4 +31,3 @@
     "printability": 7
   }
 }
-
