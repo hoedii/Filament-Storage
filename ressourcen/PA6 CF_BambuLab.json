@@ -1,0 +1,26 @@
+{
+  "name": "PA6 CF",
+  "product_url": "https://eu.store.bambulab.com/de/products/pa6-cf",
+  "technical_data": {
+    "Dry Out Before Use": "Required",
+    "Dry Conditions": "80℃, 8h-12h",
+    "ACE Pro Compatibility": "NOT Compatible",
+    "Printing Temperature": "260-290℃",
+    "Heated Bed Temperature": "80-100℃",
+    "Printing Speed": "<100 mm/s",
+    "Cooling Time": "6s",
+    "Maximum Volumetric Flow Rate": "15mm/s",
+    "Properties": [
+    "- Sturdy and durable",
+    "- High-success rate",
+    "- High-toughness",
+    "- Temperature-resist"
+    ]
+  "ratings": {
+    "impactStrength": 6,
+    "stiffness": 6,
+    "budgetFriendly": 3,
+    "heatResistance": 7,
+    "printability": 5
+  }
+}

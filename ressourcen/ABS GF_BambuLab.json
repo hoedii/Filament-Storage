@@ -1,0 +1,26 @@
+{
+  "name": "ABS GF",
+  "product_url": "https://eu.store.bambulab.com/de/products/abs-gf?id=48011475911004",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "80℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "240-270℃",
+    "Heated Bed Temperature": "80-100℃",
+    "Printing Speed": "<180 mm/s",
+    "Cooling Time": "6s",
+    "Maximum Volumetric Flow Rate": "15mm/s",
+    "Properties": [
+    "- Sturdy and durable",
+    "- High-success rate",
+    "- High-toughness",
+    "- Temperature-resist"
+    ]
+  "ratings": {
+    "impactStrength": 2,
+    "stiffness": 3,
+    "budgetFriendly": 8,
+    "heatResistance": 3,
+    "printability": 7
+  }
+}
