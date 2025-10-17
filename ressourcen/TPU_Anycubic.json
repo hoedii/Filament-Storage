@@ -16,5 +16,13 @@
     "- Comfortable to the touch",
     "- Highly durable"
     ]
+  },
+  "ratings": {
+    "impactStrength": 10,
+    "stiffness": 1,
+    "budgetFriendly": 7,
+    "heatResistance": 1,
+    "printability": 3
   }
 }
+
