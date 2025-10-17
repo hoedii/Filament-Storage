@@ -22,5 +22,12 @@
     "- Minimal odor, safe to print",
     "- High-precision with low shrinkage rate"
     ]
+  "ratings": {
+    "impactStrength": 7,
+    "stiffness": 8,
+    "budgetFriendly": 6,
+    "heatResistance": 6,
+    "printability": 7
   }
 }
+
