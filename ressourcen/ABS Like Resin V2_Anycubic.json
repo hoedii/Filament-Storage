@@ -22,5 +22,12 @@
     "- Minimal odor and easy to form",
     "- Effortless support removal"
     ]
+  "ratings": {
+    "impactStrength": 7,
+    "stiffness": 7,
+    "budgetFriendly": 7,
+    "heatResistance": 6,
+    "printability": 8
   }
 }
+
