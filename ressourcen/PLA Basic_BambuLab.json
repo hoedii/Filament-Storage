@@ -16,5 +16,13 @@
     "- Eco-friendly, biodegradable",
     "- High precision and accuracy"
     ]
+  },
+  "ratings": {
+    "impactStrength": 4,
+    "stiffness": 3,
+    "budgetFriendly": 10,
+    "heatResistance": 1,
+    "printability": 10
   }
 }
+
