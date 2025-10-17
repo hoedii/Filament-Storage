@@ -817,9 +817,9 @@
           label.style.display = 'flex';
           label.style.alignItems = 'center';
           label.style.gap = '12px';
-          const material = (row['Material'] || '').replace(/ /g, '%20');
-          const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
-          const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+          const material = safeEnc(row['Material']);
+          const hersteller = safeEnc(row['Hersteller'] || row['Manufacturer']);
+          const farbe = safeEnc(row['Farbe'] || row['Color']);
           const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
           const img = document.createElement('img');
           img.src = imgUrl;
@@ -1054,9 +1054,9 @@
               nameInfoRow.appendChild(colorDiv);
               // Info-Icon ggf. rechts daneben
               (async () => {
-                const material = (row['Material'] || '').replace(/ /g, '%20');
-                const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
-                const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+                const material = safeEnc(row['Material']);
+                const hersteller = safeEnc(row['Hersteller'] || row['Manufacturer']);
+                const farbe = safeEnc(row['Farbe'] || row['Color']);
                 const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
                 const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}.json`;
                 let hasImage = false, hasSettings = false;
@@ -1526,9 +1526,9 @@
         modal.innerHTML = '';
         modal.style.display = 'flex';
       }
-      const materialEnc = material.replace(/ /g, '%20');
-      const herstellerEnc = hersteller.replace(/ /g, '%20');
-      const farbeEnc = farbe.replace(/ /g, '%20');
+      const materialEnc = safeEnc(material);
+      const herstellerEnc = safeEnc(hersteller);
+      const farbeEnc = safeEnc(farbe);
       const farbeText = farbe;
       const imgUrlDefault = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${materialEnc}_${herstellerEnc}_${farbeEnc}.jpg`;
       const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${materialEnc}_${herstellerEnc}.json`;
@@ -1744,7 +1744,7 @@
             link.style.marginBottom = '18px';
             link.style.marginTop = '16px';
             link.style.transition = 'background 0.2s';
-            link.style.alignSelf = 'flex-start';
+            link.style.alignSelf = 'center';
             link.onmouseover = () => { link.style.background = '#003e87'; };
             link.onmouseout = () => { link.style.background = '#0057b8'; };
             // Link icon (SVG)
@@ -1753,6 +1753,50 @@
             link.textContent = 'Product link';
             link.appendChild(icon);
             imageCol.appendChild(link);
+          }
+
+          // Radar chart card (attractive, theme-aware)
+          const ratings = getMaterialRatingsFromJson(json);
+          if (ratings) {
+            const chartCard = document.createElement('div');
+            chartCard.style.border = '1px solid #e0e6ed';
+            chartCard.style.borderRadius = '10px';
+            chartCard.style.padding = '12px 14px 8px 14px';
+            chartCard.style.marginTop = '12px';
+            chartCard.style.width = '100%';
+            chartCard.style.maxWidth = '340px';
+            chartCard.style.background = '#fafdff';
+            chartCard.style.boxShadow = '0 2px 10px rgba(0,0,0,0.06)';
+            if (document.body.classList.contains('dark')) {
+              chartCard.style.background = 'var(--bg)';
+              chartCard.style.border = '1px solid #30363d';
+              chartCard.style.boxShadow = '0 2px 16px rgba(0,0,0,0.35)';
+            }
+
+            const chartTitle = document.createElement('div');
+            chartTitle.textContent = 'Material Profile';
+            chartTitle.style.fontWeight = 'bold';
+            chartTitle.style.fontSize = '1.0rem';
+            chartTitle.style.margin = '0 0 8px 2px';
+            chartCard.appendChild(chartTitle);
+
+            const canvas = document.createElement('canvas');
+            canvas.style.width = '100%';
+            canvas.style.height = '220px';
+            canvas.style.display = 'block';
+            chartCard.appendChild(canvas);
+
+            imageCol.appendChild(chartCard);
+
+            // Defer render to allow layout sizing
+            requestAnimationFrame(() => {
+              renderRadarChart(
+                canvas,
+                ratings.labels,
+                ratings.values,
+                { dark: document.body.classList.contains('dark') }
+              );
+            });
           }
           
           // Schmale Seitenleiste für Messverlauf - weniger prominent
@@ -1942,7 +1986,7 @@
             link.style.marginBottom = '18px';
             link.style.marginTop = '16px';
             link.style.transition = 'background 0.2s';
-            link.style.alignSelf = 'flex-start';
+            link.style.alignSelf = 'center';
             link.onmouseover = () => { link.style.background = '#003e87'; };
             link.onmouseout = () => { link.style.background = '#0057b8'; };
             // Link icon (SVG)
@@ -2132,6 +2176,148 @@
       return [238,238,238];
     }
 
+    // Safe encoder that also trims whitespace to avoid trailing %20 mismatches
+    function safeEnc(str) {
+      return encodeURIComponent(String(str || '').trim());
+    }
+
+    // --- Radar (Spider) Chart Helpers ---
+    function getMaterialRatingsFromJson(json) {
+      if (!json || typeof json !== 'object') return null;
+      const source = json.ratings || json.spider || json.profile || json.material_profile || json;
+      if (!source || typeof source !== 'object') return null;
+      // Map multiple possible keys to our canonical metrics
+      const pick = (obj, keys) => {
+        for (let i = 0; i < keys.length; i++) {
+          const k = keys[i];
+          if (obj[k] != null && obj[k] !== '') return obj[k];
+        }
+        return null;
+      };
+      const impact = pick(source, ['impactStrength','impact','toughness','schlagzaehigkeit']);
+      const stiffness = pick(source, ['stiffness','rigidity','steifigkeit']);
+      const budget = pick(source, ['budgetFriendly','budget','cost','preis_leistung']);
+      const heat = pick(source, ['heatResistance','heat','temperatureResistance','tempResistance','waermebestaendigkeit']);
+      const printability = pick(source, ['printability','easeOfPrint','printEase','druckbarkeit']);
+      const vals = [impact, stiffness, budget, heat, printability]
+        .map(v => {
+          const n = Number(v);
+          if (Number.isFinite(n)) return Math.max(1, Math.min(10, n));
+          return null;
+        });
+      if (vals.some(v => v === null)) return null;
+      const labels = ['Impact Strength', 'Stiffness', 'Budget Friendly', 'Heat Resistance', 'Printability'];
+      return { labels, values: vals };
+    }
+
+    function renderRadarChart(canvas, labels, values, opts = {}) {
+      if (!canvas || !canvas.getContext) return;
+      const dpr = window.devicePixelRatio || 1;
+      const cssWidth = canvas.clientWidth || 300;
+      const cssHeight = canvas.clientHeight || 220;
+      canvas.width = Math.round(cssWidth * dpr);
+      canvas.height = Math.round(cssHeight * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const isDark = !!opts.dark;
+      const centerX = cssWidth / 2;
+      const centerY = cssHeight / 2 + 6;
+      const radius = Math.min(cssWidth, cssHeight) * 0.38;
+      const levels = 5;
+      const maxVal = 10;
+      const spokes = labels.length;
+      const angleStep = (Math.PI * 2) / spokes;
+
+      const gridColor = isDark ? '#30363d' : '#dde3ea';
+      const axisColor = isDark ? '#3a4149' : '#c9d3df';
+      const labelColor = isDark ? '#e6edf3' : '#333';
+      const polyStroke = isDark ? '#58a6ff' : '#0057b8';
+      const polyFill = isDark ? 'rgba(88,166,255,0.18)' : 'rgba(0,87,184,0.15)';
+
+      ctx.clearRect(0, 0, cssWidth, cssHeight);
+
+      // Draw concentric polygons (levels)
+      for (let l = 1; l <= levels; l++) {
+        const r = (radius * l) / levels;
+        ctx.beginPath();
+        for (let i = 0; i < spokes; i++) {
+          const ang = -Math.PI / 2 + i * angleStep;
+          const x = centerX + r * Math.cos(ang);
+          const y = centerY + r * Math.sin(ang);
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.strokeStyle = gridColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw axes
+      for (let i = 0; i < spokes; i++) {
+        const ang = -Math.PI / 2 + i * angleStep;
+        const x = centerX + radius * Math.cos(ang);
+        const y = centerY + radius * Math.sin(ang);
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = axisColor;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+
+      // Draw labels
+      ctx.fillStyle = labelColor;
+      ctx.font = '12px Segoe UI, sans-serif';
+      labels.forEach((label, i) => {
+        const ang = -Math.PI / 2 + i * angleStep;
+        const lx = centerX + (radius + 16) * Math.cos(ang);
+        const ly = centerY + (radius + 16) * Math.sin(ang);
+        ctx.textAlign = Math.cos(ang) > 0.2 ? 'left' : (Math.cos(ang) < -0.2 ? 'right' : 'center');
+        ctx.textBaseline = Math.sin(ang) > 0.2 ? 'top' : (Math.sin(ang) < -0.2 ? 'bottom' : 'middle');
+        ctx.fillText(label, lx, ly);
+      });
+
+      // Data polygon
+      const pts = values.map((val, i) => {
+        const r = (val / maxVal) * radius;
+        const ang = -Math.PI / 2 + i * angleStep;
+        return [centerX + r * Math.cos(ang), centerY + r * Math.sin(ang)];
+      });
+      ctx.beginPath();
+      pts.forEach(([x, y], idx) => {
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.closePath();
+      ctx.fillStyle = polyFill;
+      ctx.strokeStyle = polyStroke;
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+
+      // Data nodes with centered numbers
+      const nodeRadius = 10;
+      pts.forEach(([x, y], i) => {
+        // Node circle
+        ctx.beginPath();
+        ctx.arc(x, y, nodeRadius, 0, Math.PI * 2);
+        ctx.fillStyle = polyStroke; // keep colored
+        ctx.fill();
+        // Contrast outline for readability
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = isDark ? '#0d1117' : '#ffffff';
+        ctx.stroke();
+        // Value text
+        ctx.fillStyle = isDark ? 'rgba(255,255,255,0.85)' : 'rgba(255,255,255,0.8)';
+        ctx.font = '600 11px Segoe UI, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(String(values[i]), x, y);
+      });
+    }
+
     // Data loading with loading spinner
     function loadData({ showLoader = true, showUpdatePopup = false } = {}) {
       if (showLoader) {
@@ -2248,9 +2434,9 @@
         label.style.alignItems = 'center';
         label.style.gap = '12px';
         // Bildvorschau
-        const material = (row['Material'] || '').replace(/ /g, '%20');
-        const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
-        const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+        const material = safeEnc(row['Material']);
+        const hersteller = safeEnc(row['Hersteller'] || row['Manufacturer']);
+        const farbe = safeEnc(row['Farbe'] || row['Color']);
         const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
         const img = document.createElement('img');
         img.src = imgUrl;
@@ -2743,9 +2929,9 @@
         li.style.gap = '14px';
         // Bild
         if (row) {
-          const material = (row['Material'] || '').replace(/ /g, '%20');
-          const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').replace(/ /g, '%20');
-          const farbe = (row['Farbe'] || row['Color'] || '').replace(/ /g, '%20');
+          const material = safeEnc(row['Material']);
+          const hersteller = safeEnc(row['Hersteller'] || row['Manufacturer']);
+          const farbe = safeEnc(row['Farbe'] || row['Color']);
           const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
           const img = document.createElement('img');
           img.src = imgUrl;
