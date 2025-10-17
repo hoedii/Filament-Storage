@@ -11,18 +11,17 @@
     "Cooling Time": "8s",
     "Maximum Volumetric Flow Rate": "12mm/s",
     "Properties": [
-    "- Soft texture, delicate surface, and seamless layer finish",
-    "- Easy support removal",
-    "- Can be stored for a long time",
-    "- Eco-friendly and biodegradable"
+      "- Soft texture, delicate surface, and seamless layer finish",
+      "- Easy support removal",
+      "- Can be stored for a long time",
+      "- Eco-friendly and biodegradable"
     ]
-      "ratings": {
+  },
+  "ratings": {
     "impactStrength": 6,
     "stiffness": 7,
     "budgetFriendly": 9,
     "heatResistance": 4,
     "printability": 9
   }
-  }
 }
-
