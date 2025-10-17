@@ -16,5 +16,13 @@
     "- Outstanding chemical and weather resistance",
     "- Eco-friendly, biodegradable"
     ]
+  },
+  "ratings": {
+    "impactStrength": 5,
+    "stiffness": 2,
+    "budgetFriendly": 10,
+    "heatResistance": 2,
+    "printability": 9
   }
 }
+
