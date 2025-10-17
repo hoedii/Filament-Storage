@@ -11,11 +11,12 @@
     "Cooling Time": "6s",
     "Maximum Volumetric Flow Rate": "15mm/s",
     "Properties": [
-    "- Sturdy and durable",
-    "- High-success rate",
-    "- High-toughness",
-    "- Temperature-resist"
+      "- Sturdy and durable",
+      "- High-success rate",
+      "- High-toughness",
+      "- Temperature-resist"
     ]
+  },
   "ratings": {
     "impactStrength": 6,
     "stiffness": 6,
