@@ -24,10 +24,11 @@
     ]
   },
   "ratings": {
-    "impactStrength": 7,
+    "impactStrength": 4,
     "stiffness": 7,
     "budgetFriendly": 7,
     "heatResistance": 6,
     "printability": 8
   }
 }
+
