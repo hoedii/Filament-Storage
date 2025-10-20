@@ -342,6 +342,47 @@
     .history-content > div::-webkit-scrollbar { width: 0; height: 0; display: none; }
     /* Fallback: hide any descendant scrollbars */
     .history-content *::-webkit-scrollbar { width: 0 !important; height: 0 !important; display: none !important; }
+    /* Live search input in header */
+    .toolbar-center { flex: 1; display: flex; justify-content: center; }
+    #liveSearchWrapper { position: relative; width: min(520px, 60vw); }
+    #liveSearchInput {
+      width: 100%;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+    }
+    #liveSearchDropdown {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      right: 0;
+      background: #fff;
+      border: 1px solid #e6eef7;
+      border-radius: 10px;
+      box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+      z-index: 2000;
+      display: none;
+      max-height: 50vh;
+      overflow: auto;
+    }
+    .live-option { padding: 8px 12px; cursor: pointer; display: flex; gap: 8px; align-items: center; }
+    .live-option:hover { background: #f1f5fa; }
+    .live-thumb { width: 24px; height: 24px; border-radius: 6px; object-fit: cover; background: #f6f6f6; border: 1px solid #ddd; }
+    .live-id { font-weight: 600; color: #555; min-width: 70px; }
+    .live-main { color: #222; }
+    .live-meta { color: #777; font-size: 12px; margin-left: auto; }
+
+    /* Dark mode for live search */
+    body.dark #liveSearchDropdown { background: #161b22; border-color: #30363d; box-shadow: 0 6px 28px rgba(0,0,0,0.5); }
+    body.dark .live-option:hover { background: #0f1724; }
+    body.dark .live-thumb { background: #0d1117; border: 1px solid #30363d; }
+    body.dark .live-id { color: #9aa4af; }
+    body.dark .live-main { color: var(--text); }
+    body.dark .live-meta { color: #9aa4af; }
   </style>
 </head>
 <body>
@@ -380,6 +421,12 @@
   <div class="card">
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <h2 style="margin: 0;">Filament Storage</h2>
+      <div class="toolbar-center">
+        <div id="liveSearchWrapper">
+          <input id="liveSearchInput" type="text" placeholder="Search by Material, Spool ID, Manufacturer, Color" autocomplete="off" />
+          <div id="liveSearchDropdown"></div>
+        </div>
+      </div>
       <div style="display:flex;gap:10px;align-items:center;">
         <!-- Theme toggle button -->
         <button id="themeToggle" title="Toggle Dark Mode" style="padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);cursor:pointer;font-size:14px;">Dark Mode</button>
@@ -500,6 +547,120 @@
     let rangeFilters = {};
     let sortState = { key: null, asc: true };
     let lockedFilters = null;
+    // --- Live Search (typeahead) ---
+    (function setupLiveSearch() {
+      const input = document.getElementById('liveSearchInput');
+      const dropdown = document.getElementById('liveSearchDropdown');
+      if (!input || !dropdown) return;
+
+      function norm(v) { return String(v || '').trim().toLowerCase(); }
+
+      function buildMatches(query) {
+        if (!Array.isArray(originalData) || originalData.length === 0) return [];
+        const q = norm(query);
+        if (!q) return [];
+
+        const results = [];
+        for (const row of originalData) {
+          const mat = norm(row['Material']);
+          const id = norm(row['Spool ID']);
+          const man = norm(row['Hersteller'] || row['Manufacturer']);
+          const col = norm(row['Farbe'] || row['Color']);
+          if ((row['Spool ID'] || '').trim() === '') continue;
+          const all = [mat, id, man, col];
+          if (all.some(f => f.includes(q))) {
+            let score = 0;
+            if (id.startsWith(q)) score += 5;
+            if (mat.startsWith(q)) score += 4;
+            if (man.startsWith(q)) score += 2;
+            if (col.startsWith(q)) score += 1;
+            if (id === q) score += 6;
+            if (mat === q) score += 4;
+            results.push({ row, score });
+          }
+        }
+        results.sort((a,b) => b.score - a.score);
+        return results.slice(0, 20).map(r => r.row);
+      }
+
+      function renderDropdown(items) {
+        if (!items || items.length === 0) {
+          dropdown.style.display = 'none';
+          dropdown.innerHTML = '';
+          return;
+        }
+        dropdown.innerHTML = '';
+        items.forEach(row => {
+          const opt = document.createElement('div');
+          opt.className = 'live-option';
+
+          // Thumbnail image based on Material/Manufacturer/Color
+          const material = safeEnc(row['Material']);
+          const hersteller = safeEnc(row['Hersteller'] || row['Manufacturer']);
+          const farbe = safeEnc(row['Farbe'] || row['Color']);
+          const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
+          const img = document.createElement('img');
+          img.className = 'live-thumb';
+          img.src = imgUrl;
+          img.alt = 'thumb';
+          img.onerror = () => { img.style.display = 'none'; };
+          opt.appendChild(img);
+
+          const id = document.createElement('span');
+          id.className = 'live-id';
+          id.textContent = (row['Spool ID'] || '').trim();
+          opt.appendChild(id);
+
+          const main = document.createElement('span');
+          main.className = 'live-main';
+          main.textContent = [row['Material'], (row['Farbe'] || row['Color'])].filter(Boolean).join(' ');
+          opt.appendChild(main);
+
+          const meta = document.createElement('span');
+          meta.className = 'live-meta';
+          meta.textContent = [row['Hersteller'] || row['Manufacturer']].filter(Boolean).join(' ');
+          opt.appendChild(meta);
+
+          opt.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.style.display = 'none';
+            showFilamentImage(row);
+          };
+          dropdown.appendChild(opt);
+        });
+        dropdown.style.display = 'block';
+      }
+
+      let lastQuery = '';
+      let raf = 0;
+      function onChange() {
+        const q = input.value;
+        if (q === lastQuery) return;
+        lastQuery = q;
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(() => {
+          const matches = buildMatches(q);
+          renderDropdown(matches);
+        });
+      }
+
+      input.addEventListener('input', onChange);
+      input.addEventListener('focus', onChange);
+
+      document.addEventListener('mousedown', (e) => {
+        if (!dropdown.contains(e.target) && e.target !== input) {
+          dropdown.style.display = 'none';
+        }
+      });
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') dropdown.style.display = 'none';
+      });
+
+      window.addEventListener('data-reloaded', () => {
+        if (document.activeElement === input && (input.value || '').trim()) onChange();
+      });
+    })();
 
     // Theme handling
     (function setupTheme() {
@@ -2438,6 +2599,8 @@
           renderTable(data);
           applyUrlFiltersAndLock();
           applyFilters();
+          // Notify listeners (e.g., live search) that data changed
+          window.dispatchEvent(new Event('data-reloaded'));
           const keys = Object.keys(data[0]);
           if (keys.length > 0) {
             filters[keys[0]] = data[0][keys[0]];
