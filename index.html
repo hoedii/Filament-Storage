@@ -547,6 +547,31 @@
     let rangeFilters = {};
     let sortState = { key: null, asc: true };
     let lockedFilters = null;
+    // Restricted link mode: allowed spool IDs (filled when ?link= present)
+    let allowedSpoolIds = null; // Set<string> or null when unrestricted
+
+    function getLinkCode() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('link');
+        return code && code.trim() !== '' ? code.trim() : null;
+      } catch { return null; }
+    }
+
+    async function ensureAllowedSpoolIdsLoaded() {
+      const code = getLinkCode();
+      if (!code) { allowedSpoolIds = null; return; }
+      if (allowedSpoolIds instanceof Set) return; // already loaded
+      try {
+        const resp = await fetch('https://raw.githubusercontent.com/hoedii/Filament-Storage/main/permissions', { cache: 'no-store' });
+        if (!resp.ok) { allowedSpoolIds = new Set(); return; }
+        const perms = await resp.json();
+        const list = (perms && perms[code]) || [];
+        allowedSpoolIds = new Set((Array.isArray(list) ? list : []).map(v => String(v || '').trim()).filter(Boolean));
+      } catch {
+        allowedSpoolIds = new Set();
+      }
+    }
     // --- Live Search (typeahead) ---
     (function setupLiveSearch() {
       const input = document.getElementById('liveSearchInput');
@@ -566,6 +591,11 @@
 
         const results = [];
         for (const row of originalData) {
+          // If restricted link mode: only consider allowed spool IDs
+          if (allowedSpoolIds instanceof Set && allowedSpoolIds.size > 0) {
+            const sid = String(row['Spool ID'] || '').trim();
+            if (!allowedSpoolIds.has(sid)) continue;
+          }
           const mat = norm(row['Material']);
           const id = norm(row['Spool ID']);
           const man = norm(row['Hersteller'] || row['Manufacturer']);
@@ -1752,6 +1782,7 @@
       if (matchingSpoolIds.length > 0) {
         spoolIdString = ' (' + matchingSpoolIds.join(', ') + ')';
       }
+      const currentSpoolId = (row['Spool ID'] || '').trim();
       let modal = document.getElementById('filamentImageModal');
       if (!modal) {
         modal = document.createElement('div');
@@ -1846,11 +1877,32 @@
             // Spool IDs dezent
             if (spoolIdString) {
               const idSpan = document.createElement('span');
-              idSpan.textContent = spoolIdString;
               idSpan.style.fontSize = '1.3rem';
               idSpan.style.color = '#888';
               idSpan.style.marginLeft = '10px';
               idSpan.style.fontWeight = 'normal';
+              // Build formatted IDs with current one bold
+              if (Array.isArray(matchingSpoolIds) && matchingSpoolIds.length) {
+                const openParen = document.createTextNode(' (');
+                idSpan.appendChild(openParen);
+                matchingSpoolIds.forEach((id, idx) => {
+                  const idNode = document.createElement('span');
+                  const trimmedId = String(id || '').trim();
+                  if (trimmedId === currentSpoolId && trimmedId !== '') {
+                    idNode.style.fontWeight = 'bold';
+                    idNode.style.color = '#555';
+                  }
+                  idNode.textContent = trimmedId;
+                  idSpan.appendChild(idNode);
+                  if (idx < matchingSpoolIds.length - 1) {
+                    idSpan.appendChild(document.createTextNode(', '));
+                  }
+                });
+                const closeParen = document.createTextNode(')');
+                idSpan.appendChild(closeParen);
+              } else {
+                idSpan.textContent = spoolIdString;
+              }
               nameDiv.appendChild(idSpan);
             }
             // Hersteller klein darunter
@@ -2107,6 +2159,7 @@
           historyContent.style.flexDirection = 'column';
           historyContent.style.overflowY = 'auto'; // Scrollbar für die rechte Spalte
           historyContent.style.maxHeight = '400px'; // Begrenzte Höhe, um Scrollbar zu aktivieren
+          historyContent.style.position = 'relative'; // Ensure proper positioning for sticky footer
           
           // Loading indicator
           const loadingDiv = document.createElement('div');
@@ -2179,11 +2232,31 @@
             // Spool IDs dezent
             if (spoolIdString) {
               const idSpan = document.createElement('span');
-              idSpan.textContent = spoolIdString;
               idSpan.style.fontSize = '1.3rem';
               idSpan.style.color = '#888';
               idSpan.style.marginLeft = '10px';
               idSpan.style.fontWeight = 'normal';
+              if (Array.isArray(matchingSpoolIds) && matchingSpoolIds.length) {
+                const openParen = document.createTextNode(' (');
+                idSpan.appendChild(openParen);
+                matchingSpoolIds.forEach((id, idx) => {
+                  const idNode = document.createElement('span');
+                  const trimmedId = String(id || '').trim();
+                  if (trimmedId === currentSpoolId && trimmedId !== '') {
+                    idNode.style.fontWeight = 'bold';
+                    idNode.style.color = '#555';
+                  }
+                  idNode.textContent = trimmedId;
+                  idSpan.appendChild(idNode);
+                  if (idx < matchingSpoolIds.length - 1) {
+                    idSpan.appendChild(document.createTextNode(', '));
+                  }
+                });
+                const closeParen = document.createTextNode(')');
+                idSpan.appendChild(closeParen);
+              } else {
+                idSpan.textContent = spoolIdString;
+              }
               nameDiv.appendChild(idSpan);
             }
             // Hersteller klein darunter
@@ -2615,6 +2688,8 @@
           renderTable(data);
           applyUrlFiltersAndLock();
           applyFilters();
+          // In restricted link mode, load allowed spool IDs once
+          ensureAllowedSpoolIdsLoaded();
           // Notify listeners (e.g., live search) that data changed
           window.dispatchEvent(new Event('data-reloaded'));
           const keys = Object.keys(data[0]);
@@ -3057,6 +3132,7 @@
       ['wImpactGroup','wStiffGroup','wBudgetGroup','wHeatGroup','wPrintGroup'].forEach(initSegment);
 
       async function runSearch(){
+        await ensureAllowedSpoolIdsLoaded();
         const levelToWeight = (lvl) => {
           switch (lvl) {
             case 'very': return 3.0;
@@ -3080,6 +3156,11 @@
         // Aggregate by Material only (manufacturer ignored), collect manufacturers and colors
         const groups = new Map();
         (originalData || []).forEach(r => {
+          // Restrict groups to allowed spool IDs in link mode
+          if (allowedSpoolIds instanceof Set && allowedSpoolIds.size > 0) {
+            const sid = String(r['Spool ID'] || '').trim();
+            if (!allowedSpoolIds.has(sid)) return;
+          }
           const mat = (r['Material'] || '').trim();
           const man = (r['Hersteller'] || r['Manufacturer'] || '').trim();
           const col = (r['Farbe'] || r['Color'] || '').trim();
@@ -3818,6 +3899,7 @@
       measurementsContainer.style.overflowY = 'auto';
       measurementsContainer.style.flex = '1'; // Take available space
       measurementsContainer.style.paddingRight = '5px';
+      measurementsContainer.style.minHeight = '0'; // Allow flex shrinking
       container.appendChild(measurementsContainer);
       
       // Show all measurements instead of limiting to 8
@@ -3890,7 +3972,7 @@
         // Create date element for sidebar that stays fixed at the bottom
         const firstDateDiv = document.createElement('div');
         firstDateDiv.style.textAlign = 'center';
-        firstDateDiv.style.padding = '5px'; // Reduced padding
+        firstDateDiv.style.padding = '8px 5px'; // Slightly more padding
         firstDateDiv.style.marginTop = 'auto'; // Push to bottom of container
         firstDateDiv.style.fontSize = '0.8rem';
         firstDateDiv.style.color = '#666';
@@ -3904,6 +3986,7 @@
         firstDateDiv.style.width = '100%'; // Ensure it takes full width
         firstDateDiv.style.height = 'auto'; // Only as high as needed for the text
         firstDateDiv.style.boxShadow = '0 -2px 5px rgba(0,0,0,0.05)'; // Add subtle shadow for separation
+        firstDateDiv.style.flexShrink = '0'; // Prevent shrinking
         // Dark mode adjustments
         if (document.body.classList.contains('dark')) {
           firstDateDiv.style.color = '#9aa4af';
