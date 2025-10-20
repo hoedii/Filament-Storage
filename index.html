@@ -560,6 +560,10 @@
         const q = norm(query);
         if (!q) return [];
 
+        // Support multiple terms separated by whitespace (AND logic across fields)
+        const terms = q.split(/\s+/).filter(Boolean);
+        if (terms.length === 0) return [];
+
         const results = [];
         for (const row of originalData) {
           const mat = norm(row['Material']);
@@ -567,17 +571,29 @@
           const man = norm(row['Hersteller'] || row['Manufacturer']);
           const col = norm(row['Farbe'] || row['Color']);
           if ((row['Spool ID'] || '').trim() === '') continue;
-          const all = [mat, id, man, col];
-          if (all.some(f => f.includes(q))) {
-            let score = 0;
-            if (id.startsWith(q)) score += 5;
-            if (mat.startsWith(q)) score += 4;
-            if (man.startsWith(q)) score += 2;
-            if (col.startsWith(q)) score += 1;
-            if (id === q) score += 6;
-            if (mat === q) score += 4;
-            results.push({ row, score });
+          const fields = [mat, id, man, col];
+
+          // All terms must be found in at least one of the fields
+          let allTermsMatch = true;
+          let score = 0;
+          for (const t of terms) {
+            let termMatched = false;
+            // Score per term with preference: exact id > startsWith > includes
+            if (id === t) { score += 8; termMatched = true; }
+            if (!termMatched && id.startsWith(t)) { score += 5; termMatched = true; }
+            if (!termMatched && mat.startsWith(t)) { score += 4; termMatched = true; }
+            if (!termMatched && man.startsWith(t)) { score += 2; termMatched = true; }
+            if (!termMatched && col.startsWith(t)) { score += 1; termMatched = true; }
+            if (!termMatched && fields.some(f => f.includes(t))) { score += 1; termMatched = true; }
+            if (!termMatched) { allTermsMatch = false; break; }
           }
+          if (!allTermsMatch) continue;
+
+          // Small bonus for matching more distinct fields
+          const matchedFieldsCount = terms.reduce((acc, t) => acc + (new Set(fields.filter(f => f.includes(t))).size > 0 ? 1 : 0), 0);
+          score += matchedFieldsCount * 0.2;
+
+          results.push({ row, score });
         }
         results.sort((a,b) => b.score - a.score);
         return results.slice(0, 20).map(r => r.row);
