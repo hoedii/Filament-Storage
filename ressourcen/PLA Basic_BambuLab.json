@@ -1,6 +1,6 @@
 {
-  "name": "PLA CF",
-  "product_url": "https://eu.store.bambulab.com/de/products/pla-cf",
+  "name": "PLA Basic",
+  "product_url": "https://eu.store.bambulab.com/de/products/pla-basic-filament",
   "technical_data": {
     "Dry Out Before Use": "Recommended",
     "Dry Conditions": "55℃, 8h",
@@ -11,17 +11,17 @@
     "Cooling Time": "8s",
     "Maximum Volumetric Flow Rate": "12mm/s",
     "Properties": [
-    "- Carbon Fiber Texture & Minimized Layer Lines",
-    "- Improved Mechanical Properties",
-    "- Stablized Printing Dimension"
+    "- Biologisch abbaubar",
+    "- Glatte Oberfläche",
+    "- Einfach zu drucken und anfängerfreundlich"
     ]
   },
   "ratings": {
-    "impactStrength": 3,
-    "stiffness": 4,
-    "budgetFriendly": 9,
+    "impactStrength": 4,
+    "stiffness": 3,
+    "budgetFriendly": 10,
     "heatResistance": 1,
-    "printability": 9
+    "printability": 10
   }
 }
 
