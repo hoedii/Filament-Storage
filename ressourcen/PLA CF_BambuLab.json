@@ -1,0 +1,27 @@
+{
+  "name": "PLA CF",
+  "product_url": "https://eu.store.bambulab.com/de/products/pla-cf",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "55℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "190-230℃",
+    "Heated Bed Temperature": "55-65℃",
+    "Printing Speed": "50-200mm/s",
+    "Cooling Time": "8s",
+    "Maximum Volumetric Flow Rate": "12mm/s",
+    "Properties": [
+    "- Carbon Fiber Texture & Minimized Layer Lines",
+    "- Improved Mechanical Properties",
+    "- Stablized Printing Dimension"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 3,
+    "stiffness": 4,
+    "budgetFriendly": 9,
+    "heatResistance": 1,
+    "printability": 9
+  }
+}
+
