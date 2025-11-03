@@ -8,8 +8,8 @@
     "Printing Temperature": "190-230℃",
     "Heated Bed Temperature": "55-65℃",
     "Printing Speed": "50-200mm/s",
-    "Cooling Time": "8s",
-    "Maximum Volumetric Flow Rate": "12mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "53°C",
+    "Elongation at Break": "28%",
     "Properties": [
     "- No clogging, minimal stringing, no warping, eco-friendly with no odor",
     "- Rich colors with a vibrant, glossy finish",
@@ -25,4 +25,5 @@
     "printability": 10
   }
 }
+
 
