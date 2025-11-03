@@ -1797,7 +1797,7 @@
         modal.style.display = 'flex';
         modal.style.alignItems = 'center';
         modal.style.justifyContent = 'center';
-        modal.style.zIndex = '1000';
+        modal.style.zIndex = '10001';
         modal.style.overflow = 'auto';
         modal.style.padding = '16px';
         modal.onclick = () => { modal.remove(); };
@@ -3272,6 +3272,24 @@
             box.style.borderRadius = '4px';
             box.style.border = '1px solid #bbb';
             box.style.background = getCssColor(c);
+            box.style.cursor = 'pointer';
+            box.onclick = async (ev) => {
+              ev.stopPropagation();
+              // Find a matching row by material and color (prefer allowed IDs in locked mode)
+              const norm = (v) => String(v || '').trim();
+              const mat = norm(item.group.material);
+              const col = norm(c);
+              let candidates = (originalData || []).filter(r => {
+                return norm(r['Material']) === mat && norm(r['Farbe'] || r['Color']) === col;
+              });
+              if (allowedSpoolIds instanceof Set && allowedSpoolIds.size > 0) {
+                candidates = candidates.filter(r => allowedSpoolIds.has(norm(r['Spool ID'])));
+              }
+              const row = candidates[0] || (originalData || []).find(r => norm(r['Material']) === mat);
+              if (row) {
+                showFilamentImage(row);
+              }
+            };
             sw.appendChild(box);
           });
           card.appendChild(sw);
