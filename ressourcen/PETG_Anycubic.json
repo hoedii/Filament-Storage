@@ -8,8 +8,8 @@
     "Printing Temperature": "230-250℃",
     "Heated Bed Temperature": "70-90℃",
     "Printing Speed": "40-100mm/s",
-    "Cooling Time": "5s",
-    "Maximum Volumetric Flow Rate": "12mm³/s",
+    "Heat Deflection Temperature (0.45MPa)": "69°C",
+    "Elongation at Break": "13%",
     "Properties": [
     "- Clear and vibrant",
     "- Strong and durable",
@@ -21,8 +21,9 @@
     "impactStrength": 5,
     "stiffness": 2,
     "budgetFriendly": 10,
-    "heatResistance": 2,
+    "heatResistance": 3,
     "printability": 9
   }
 }
+
 
