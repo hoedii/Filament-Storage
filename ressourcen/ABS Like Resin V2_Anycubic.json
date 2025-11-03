@@ -27,8 +27,9 @@
     "impactStrength": 4,
     "stiffness": 7,
     "budgetFriendly": 7,
-    "heatResistance": 6,
+    "heatResistance": 3,
     "printability": 8
   }
 }
+
 
