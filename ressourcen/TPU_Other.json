@@ -8,8 +8,8 @@
     "Printing Temperature": "195-230℃",
     "Heated Bed Temperature": "50-60℃",
     "Printing Speed": "20mm/s",
-    "Cooling Time": "8s",
-    "Maximum Volumetric Flow Rate": "12mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "52°C",
+    "Elongation at Break": "697%",
     "Properties": [
     "- Rubber texture",
     "- Excellent elasticity",
@@ -25,4 +25,5 @@
     "printability": 3
   }
 }
+
 
