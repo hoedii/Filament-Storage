@@ -21,11 +21,12 @@
   "ratings": {
     "impactStrength": 5,
     "stiffness": 3,
-    "budgetFriendly": 8,
-    "heatResistance": 6,
+    "budgetFriendly": 7,
+    "heatResistance": 7,
     "printability": 5
   }
 }
+
 
 
 
