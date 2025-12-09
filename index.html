@@ -441,6 +441,10 @@
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><path d="M4 10.5V6.5C4 5.11929 5.11929 4 6.5 4H13.5C14.8807 4 16 5.11929 16 6.5V13.5C16 14.8807 14.8807 16 13.5 16H9.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 16L6 16C5.44772 16 5 15.5523 5 15L5 13" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Links
         </button>
+        <button id="heatBtn" title="Heat Inserts" style="padding:5px 14px;border-radius:6px;border:none;background:#0f9d58;color:#fff;font-weight:bold;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;"><path d="M4 5H16V7H4V5Z" fill="white"/><path d="M4 9H16V11H4V9Z" fill="white"/><path d="M4 13H12V15H4V13Z" fill="white"/></svg>
+          Heat Inserts
+        </button>
       </div>
     </div>
     <table id="spoolTable">
@@ -533,6 +537,15 @@
     </div>
   </div>
 
+  <!-- Heat Inserts Modal -->
+  <div id="heatModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:7500;align-items:center;justify-content:center;">
+    <div id="heatInner" style="background:#fff;padding:26px 26px 20px 26px;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.16);display:flex;flex-direction:column;gap:14px;min-width:520px;max-width:90vw;max-height:88vh;overflow:auto;border:1px solid #e6eef7;position:relative;">
+      <h3 style="margin:0 0 6px 0;">Heat Inserts</h3>
+      <div id="heatContent" style="display:flex;flex-direction:column;gap:10px;"></div>
+      <button id="heatClose" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:#888;">×</button>
+    </div>
+  </div>
+
   <footer style="text-align: center; margin-top: 40px;">
     <span id="footerText" style="font-size: 12px; color: #888;">
       © 2025 piodeer. All rights reserved. Created with
@@ -541,8 +554,11 @@
   </footer>
 
   <script>
-    const sheetUrl = 'https://script.googleusercontent.com/macros/echo?user_content_key=AehSKLgE3YGqR-moDtbPTrvAK1uGitkru2ELJnjh3LDzU_zFchQdd_IcOsrgXUVAqDjWFvIxYXlmALHAZPjYFAOB9Tz1Phc2r_h5CXTVrPZrLYiD3fNmRgMFHUegQplILByGGfWOxORsyZ66TzzwWirJ7EauxGjFXxJwk2AXjLD_ovXv0CHzZUFBUK4Mf5AEkCvLNAe2boqaZSBgR-lUT2ew69ONBtI4HLS2a8IvfYanQ2sAgzF9EdNFr3sC0m063xrb1o_C3E4e6sPPfHa4YKIouk59Qc9n0y2apytwtD44&lib=MujZ1rRZpYXGzJ6_gs4Z56gIUx8EhDXcY';
+    // API liefert filamentstats + heatinserts
+    const sheetUrl = 'https://script.google.com/macros/s/AKfycbydyZqjCOuI5GaA-YiYJ-8APwhuKRPCEoIjOz59BD2ea5Znv4sCHA2vdz1VgTCjgOc3qQ/exec';
     let originalData = [];
+    let heatInserts = [];
+    let heatLoading = false;
     let filters = {};
     let rangeFilters = {};
     let sortState = { key: null, asc: true };
@@ -1770,6 +1786,126 @@
       });
     }
 
+    // Heat inserts rendering
+    function renderHeatInserts() {
+      const content = document.getElementById('heatContent');
+      if (!content) return;
+      content.innerHTML = '';
+      if (heatLoading) {
+        content.innerHTML = '<div style="color:#888;display:flex;align-items:center;gap:10px;">' +
+          '<span class="loader-dots"><span></span><span></span><span></span></span>' +
+          '<span>Lade Heat Inserts...</span></div>';
+        return;
+      }
+      if (!Array.isArray(heatInserts) || heatInserts.length === 0) {
+        content.innerHTML = '<div style="color:#888;">Keine Heat Inserts gefunden.</div>';
+        return;
+      }
+
+      const list = document.createElement('div');
+      list.style.display = 'flex';
+      list.style.flexDirection = 'column';
+      list.style.gap = '10px';
+
+      heatInserts
+        .slice()
+        .sort((a,b) => String(a.name||'').localeCompare(String(b.name||'')))
+        .forEach(item => {
+          const weight = Number(item.weight) || 0;
+          const count = Number(item.count) || 0;
+          const row = document.createElement('div');
+          row.style.border = '1px solid #e0e6ed';
+          row.style.borderRadius = '10px';
+          row.style.padding = '12px';
+          row.style.display = 'flex';
+          row.style.alignItems = 'center';
+          row.style.gap = '14px';
+          row.style.background = '#fff';
+          row.onmouseenter = () => {
+            row.style.boxShadow = '0 4px 14px rgba(0,0,0,0.12)';
+            row.style.transform = 'translateY(-1px)';
+            row.style.background = document.body.classList.contains('dark') ? '#111827' : '#f7faff';
+          };
+          row.onmouseleave = () => {
+            row.style.boxShadow = 'none';
+            row.style.transform = 'none';
+            row.style.background = document.body.classList.contains('dark') ? 'var(--bg)' : '#fff';
+          };
+
+          if (document.body.classList.contains('dark')) {
+            row.style.background = 'var(--bg)';
+            row.style.border = '1px solid #30363d';
+            row.style.color = 'var(--text)';
+          }
+
+          const imgWrapper = document.createElement('div');
+          imgWrapper.style.position = 'relative';
+          imgWrapper.style.width = '80px';
+          imgWrapper.style.height = '80px';
+          imgWrapper.style.flexShrink = '0';
+          const placeholder = document.createElement('div');
+          placeholder.style.width = '100%';
+          placeholder.style.height = '100%';
+          placeholder.style.borderRadius = '10px';
+          placeholder.style.background = '#e6e6e6';
+          placeholder.style.border = '1px solid #ddd';
+          placeholder.style.display = 'flex';
+          placeholder.style.alignItems = 'center';
+          placeholder.style.justifyContent = 'center';
+          placeholder.style.fontSize = '12px';
+          placeholder.style.color = '#777';
+          placeholder.textContent = 'Image';
+          imgWrapper.appendChild(placeholder);
+
+          const img = document.createElement('img');
+          img.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/018ae402cfd92e3cd809cb8b505fb01bf3753de7/ressourcen/heatinsert.png';
+          img.alt = 'Heat insert';
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'cover';
+          img.style.borderRadius = '10px';
+          img.style.border = '1px solid #ddd';
+          img.style.position = 'absolute';
+          img.style.top = '0';
+          img.style.left = '0';
+          img.onload = () => { placeholder.style.display = 'none'; };
+          img.onerror = () => { img.style.display = 'none'; placeholder.style.display = 'flex'; };
+          imgWrapper.appendChild(img);
+          row.appendChild(imgWrapper);
+
+          const textCol = document.createElement('div');
+          textCol.style.display = 'flex';
+          textCol.style.flexDirection = 'row';
+          textCol.style.alignItems = 'center';
+          textCol.style.gap = '16px';
+
+          const name = document.createElement('div');
+          name.textContent = item.name || '';
+          name.style.fontWeight = '700';
+          name.style.fontSize = '1rem';
+          textCol.appendChild(name);
+
+          const weightDiv = document.createElement('div');
+          weightDiv.textContent = weight ? `${weight.toFixed(1)} g each` : '–';
+          weightDiv.style.fontWeight = '600';
+          textCol.appendChild(weightDiv);
+
+          const countDiv = document.createElement('div');
+          countDiv.textContent = `Qty: ${count ? count.toString() : '0'}`;
+          countDiv.style.fontWeight = '700';
+          countDiv.style.color = '#0f9d58';
+          countDiv.style.padding = '4px 8px';
+          countDiv.style.borderRadius = '8px';
+          countDiv.style.background = 'rgba(15,157,88,0.12)';
+          textCol.appendChild(countDiv);
+
+          row.appendChild(textCol);
+          list.appendChild(row);
+        });
+
+      content.appendChild(list);
+    }
+
     function showFilamentImage(row) {
       // Spool IDs mit gleichem Material, Hersteller, Farbe suchen
       const material = (row['Material'] || '').trim();
@@ -2658,11 +2794,13 @@
         controller.abort();
         if (showLoader) document.getElementById('loaderText').textContent = 'Timeout while loading data from Google Sheets!';
       }, 12000);
-      fetch(sheetUrl, { signal: controller.signal })
+      fetch(sheetUrl, { signal: controller.signal, cache: 'no-store' })
         .then(res => res.json())
         .then(responseData => {
           // Extract the filamentstats array for the main table
           const data = responseData.filamentstats || [];
+          // Heat inserts für separates Fenster
+          heatInserts = responseData.heatinserts || [];
           clearTimeout(timeout);
           if (showLoader) document.getElementById('loaderText').textContent = 'Processing data';
           // Vergleiche alte und neue Daten
@@ -2686,6 +2824,9 @@
           }
           originalData = data;
           window.originalData = data;
+          if (document.getElementById('heatModal') && document.getElementById('heatModal').style.display === 'flex') {
+            renderHeatInserts();
+          }
           renderTable(data);
           applyUrlFiltersAndLock();
           applyFilters();
@@ -3297,6 +3438,53 @@
           resultsDiv.appendChild(card);
         });
       }
+    })();
+
+    // Heat inserts modal setup
+    (function setupHeatModal(){
+      const btn = document.getElementById('heatBtn');
+      const modal = document.getElementById('heatModal');
+      const inner = document.getElementById('heatInner');
+      const closeBtn = document.getElementById('heatClose');
+      if (!btn || !modal || !inner || !closeBtn) return;
+
+      const close = () => { modal.style.display = 'none'; };
+      const open = async () => {
+        if (!Array.isArray(heatInserts) || heatInserts.length === 0) {
+          heatLoading = true;
+          renderHeatInserts();
+          try {
+            // Lade nur Heat Inserts nach, ohne UI zu blockieren
+            const res = await fetch(sheetUrl, { cache: 'no-store' });
+            if (res.ok) {
+              const json = await res.json();
+              heatInserts = json.heatinserts || [];
+            }
+          } catch (e) {
+            console.error('Heat inserts load failed', e);
+          } finally {
+            heatLoading = false;
+          }
+        }
+        // Theme adapt
+        if (document.body.classList.contains('dark')) {
+          inner.style.background = '#161b22';
+          inner.style.color = 'var(--text)';
+          inner.style.border = '1px solid #30363d';
+          inner.style.boxShadow = '0 6px 28px rgba(0,0,0,0.5)';
+        } else {
+          inner.style.background = '#fff';
+          inner.style.color = '';
+          inner.style.border = '1px solid #e6eef7';
+          inner.style.boxShadow = '0 6px 24px rgba(0,0,0,0.16)';
+        }
+        renderHeatInserts();
+        modal.style.display = 'flex';
+      };
+
+      btn.onclick = open;
+      closeBtn.onclick = close;
+      modal.addEventListener('mousedown', (e) => { if (e.target === modal) close(); });
     })();
 
     // Enable closing printModal and createLinkModal by clicking outside the modal content
@@ -4524,7 +4712,8 @@
           'filamentImageModal',
           'linkCodePopup',
           'spoolIdsPopup',
-          'measurementHistoryModal'
+          'measurementHistoryModal',
+          'heatModal'
         ];
         modalsToClose.forEach(id => {
           const el = document.getElementById(id);
