@@ -1962,6 +1962,25 @@
           countSpan.style.justifyContent = 'center';
           textCol.appendChild(countSpan);
 
+          if (primaryLower.includes('heatinsert')) {
+            const infoBtn = document.createElement('span');
+            infoBtn.textContent = 'i';
+            infoBtn.title = 'Bohrloch-Info';
+            infoBtn.style.display = 'inline-flex';
+            infoBtn.style.alignItems = 'center';
+            infoBtn.style.justifyContent = 'center';
+            infoBtn.style.width = '22px';
+            infoBtn.style.height = '22px';
+            infoBtn.style.marginLeft = 'auto';
+            infoBtn.style.borderRadius = '50%';
+            infoBtn.style.border = '1px solid #b3c6e0';
+            infoBtn.style.background = '#f0f4f9';
+            infoBtn.style.color = '#1a7f37';
+            infoBtn.style.cursor = 'pointer';
+            infoBtn.onclick = (e) => { e.stopPropagation(); showHeatInsertInfo(item); };
+            textCol.appendChild(infoBtn);
+          }
+
           row.appendChild(textCol);
           list.appendChild(row);
         });
@@ -2879,6 +2898,100 @@
         ctx.textBaseline = 'middle';
         ctx.fillText(String(values[i]), x, y);
       });
+    }
+
+    // --- Heatinsert Info helper ---
+    let heatInsertInfoCache = null;
+    async function loadHeatInsertInfo() {
+      if (heatInsertInfoCache) return heatInsertInfoCache;
+      try {
+        const res = await fetch('https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/heatinsert.txt', { cache: 'no-store' });
+        if (!res.ok) throw new Error('fetch fail');
+        const txt = await res.text();
+        const map = new Map();
+        txt.split(/\r?\n/).forEach(line => {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith('#')) return;
+          // Expected format: "M4, 3mm"
+          const parts = trimmed.split(',');
+          if (parts.length >= 2) {
+            const key = parts[0].trim().toLowerCase();
+            const val = parts.slice(1).join(',').trim();
+            if (key) map.set(key, val);
+          }
+        });
+        heatInsertInfoCache = { text: txt, map };
+        return heatInsertInfoCache;
+      } catch (e) {
+        heatInsertInfoCache = { text: '', map: new Map() };
+        return heatInsertInfoCache;
+      }
+    }
+
+    async function showHeatInsertInfo(item) {
+      const info = await loadHeatInsertInfo();
+      const rawSize = String(item.size || '').trim().toLowerCase();
+      const key = rawSize.split(/[ x]/)[0] || rawSize; // e.g. "m4 x 6" -> "m4"
+      let message = '';
+      if (key && info.map.has(key)) {
+        message = info.map.get(key);
+      } else {
+        message = 'Keine Informationen gefunden.';
+      }
+
+      // Lightweight popup
+      let popup = document.getElementById('heatInfoPopup');
+      if (popup) popup.remove();
+      popup = document.createElement('div');
+      popup.id = 'heatInfoPopup';
+      popup.style.position = 'fixed';
+      popup.style.top = '0';
+      popup.style.left = '0';
+      popup.style.width = '100vw';
+      popup.style.height = '100vh';
+      popup.style.background = 'rgba(0,0,0,0.35)';
+      popup.style.display = 'flex';
+      popup.style.alignItems = 'center';
+      popup.style.justifyContent = 'center';
+      popup.style.zIndex = '11000';
+      popup.onclick = (e) => { if (e.target === popup) popup.remove(); };
+
+      const inner = document.createElement('div');
+      inner.style.background = '#fff';
+      inner.style.padding = '18px 20px';
+      inner.style.borderRadius = '10px';
+      inner.style.boxShadow = '0 6px 24px rgba(0,0,0,0.2)';
+      inner.style.maxWidth = '520px';
+      inner.style.width = '90vw';
+      inner.style.maxHeight = '80vh';
+      inner.style.overflow = 'auto';
+      inner.style.color = '#222';
+      inner.onclick = (e) => e.stopPropagation();
+
+      const title = document.createElement('div');
+      title.textContent = 'Holediameter';
+      title.style.fontWeight = '700';
+      title.style.fontSize = '1.1rem';
+      title.style.marginBottom = '10px';
+      inner.appendChild(title);
+
+      const body = document.createElement('div');
+      body.textContent = message;
+      body.style.whiteSpace = 'pre-wrap';
+      inner.appendChild(body);
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close';
+      closeBtn.style.marginTop = '12px';
+      closeBtn.style.padding = '6px 12px';
+      closeBtn.style.borderRadius = '6px';
+      closeBtn.style.border = '1px solid #ccc';
+      closeBtn.style.cursor = 'pointer';
+      closeBtn.onclick = () => popup.remove();
+      inner.appendChild(closeBtn);
+
+      popup.appendChild(inner);
+      document.body.appendChild(popup);
     }
 
     // Data loading with loading spinner
