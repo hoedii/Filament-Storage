@@ -541,10 +541,10 @@
     </div>
   </div>
 
-  <!-- Heat Inserts Modal -->
+  <!-- Accessories Modal -->
   <div id="heatModal" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.25);z-index:7500;align-items:center;justify-content:center;">
     <div id="heatInner" style="background:#fff;padding:26px 26px 20px 26px;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,0.16);display:flex;flex-direction:column;gap:14px;min-width:520px;max-width:90vw;max-height:88vh;overflow:auto;border:1px solid #e6eef7;position:relative;">
-      <h3 style="margin:0 0 6px 0;">Heat Inserts</h3>
+      <h3 style="margin:0 0 6px 0;">Accessories</h3>
       <div id="heatContent" style="display:flex;flex-direction:column;gap:10px;"></div>
       <button id="heatClose" style="position:absolute;top:12px;right:14px;background:none;border:none;font-size:20px;cursor:pointer;color:#888;">×</button>
     </div>
@@ -559,7 +559,7 @@
 
   <script>
     // API liefert filamentstats + heatinserts
-    const sheetUrl = 'https://script.google.com/macros/s/AKfycbydyZqjCOuI5GaA-YiYJ-8APwhuKRPCEoIjOz59BD2ea5Znv4sCHA2vdz1VgTCjgOc3qQ/exec';
+    const sheetUrl = 'https://script.google.com/macros/s/AKfycbz6Em1CIY2k-kuKvK8WX8fU3ZKgZm-YRJFxJ-JwWGRA7n2dTaT2Dsd1qgoAftJhUbMOGw/exec';
     let originalData = [];
     let heatInserts = [];
     let heatLoading = false;
@@ -1806,7 +1806,7 @@
       });
     }
 
-    // Heat inserts rendering
+    // Accessories rendering (generic, sorted by name)
     function renderHeatInserts(targetId = 'heatContent') {
       const content = document.getElementById(targetId);
       if (!content) return;
@@ -1818,7 +1818,7 @@
         return;
       }
       if (!Array.isArray(heatInserts) || heatInserts.length === 0) {
-        content.innerHTML = '<div style="color:#888;">Keine Heat Inserts gefunden.</div>';
+        content.innerHTML = '<div style="color:#888;">Keine Accessories gefunden.</div>';
         return;
       }
 
@@ -1829,10 +1829,18 @@
 
       heatInserts
         .slice()
-        .sort((a,b) => String(a.name||'').localeCompare(String(b.name||'')))
+        .map(item => {
+          const primary = (item.name || item.type || '').trim(); // name hat Vorrang
+          const secondary = (item.size || '').trim();
+          const displayName = [primary, secondary].filter(Boolean).join(' ').trim();
+          return { ...item, _displayName: displayName, _primary: primary };
+        })
+        .sort((a,b) => String(a._displayName||'').localeCompare(String(b._displayName||'')))
         .forEach(item => {
           const weight = Number(item.weight) || 0;
+          const totalWeight = Number(item.totalWeight) || (weight * Number(item.count || 0));
           const count = Number(item.count) || 0;
+          const displayName = item._displayName || item.name || '';
           const row = document.createElement('div');
           row.style.border = '1px solid #e0e6ed';
           row.style.borderRadius = '10px';
@@ -1878,8 +1886,16 @@
           imgWrapper.appendChild(placeholder);
 
           const img = document.createElement('img');
-          img.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/018ae402cfd92e3cd809cb8b505fb01bf3753de7/ressourcen/heatinsert.png';
-          img.alt = 'Heat insert';
+          const primary = (item._primary || item.name || '').trim();
+          const primaryLower = primary.toLowerCase();
+          const isHeat = primaryLower.includes('heatinsert');
+          const nameEnc = safeEnc(displayName || primary || '');
+          const normalizedPng = safeEnc(primary.replace(/\s+/g, ''));
+          const fallbackHeat = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/heatinsert.png';
+          const pngUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${normalizedPng}.png`;
+          const jpgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${nameEnc}.jpg`;
+          img.src = isHeat ? fallbackHeat : pngUrl;
+          img.alt = displayName || 'Accessory';
           img.style.width = '100%';
           img.style.height = '100%';
           img.style.objectFit = 'cover';
@@ -1889,7 +1905,20 @@
           img.style.top = '0';
           img.style.left = '0';
           img.onload = () => { placeholder.style.display = 'none'; };
-          img.onerror = () => { img.style.display = 'none'; placeholder.style.display = 'flex'; };
+          img.onerror = () => {
+            if (isHeat) {
+              img.style.display = 'none';
+              placeholder.style.display = 'flex';
+              return;
+            }
+            if (!img._triedJpg) {
+              img._triedJpg = true;
+              img.src = jpgUrl;
+              return;
+            }
+            img.style.display = 'none';
+            placeholder.style.display = 'flex';
+          };
           imgWrapper.appendChild(img);
           row.appendChild(imgWrapper);
 
@@ -1897,27 +1926,41 @@
           textCol.style.display = 'flex';
           textCol.style.flexDirection = 'row';
           textCol.style.alignItems = 'center';
-          textCol.style.gap = '16px';
+          textCol.style.gap = '20px';
+          textCol.style.flexWrap = 'wrap';
+          textCol.style.fontSize = '0.95rem';
+          textCol.style.padding = '4px 0';
 
-          const name = document.createElement('div');
-          name.textContent = item.name || '';
-          name.style.fontWeight = '700';
-          name.style.fontSize = '1rem';
-          textCol.appendChild(name);
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = item._primary || '—';
+          nameSpan.style.fontWeight = '700';
+          nameSpan.style.fontSize = '1rem';
+          nameSpan.style.minWidth = '170px';
+          textCol.appendChild(nameSpan);
 
-          const weightDiv = document.createElement('div');
-          weightDiv.textContent = weight ? `${weight.toFixed(1)} g each` : '–';
-          weightDiv.style.fontWeight = '600';
-          textCol.appendChild(weightDiv);
+          const sizeSpan = document.createElement('span');
+          sizeSpan.textContent = item.size || '';
+          sizeSpan.style.minWidth = '140px';
+          textCol.appendChild(sizeSpan);
 
-          const countDiv = document.createElement('div');
-          countDiv.textContent = `Qty: ${count ? count.toString() : '0'}`;
-          countDiv.style.fontWeight = '700';
-          countDiv.style.color = '#0f9d58';
-          countDiv.style.padding = '4px 8px';
-          countDiv.style.borderRadius = '8px';
-          countDiv.style.background = 'rgba(15,157,88,0.12)';
-          textCol.appendChild(countDiv);
+          const weightSpan = document.createElement('span');
+          weightSpan.textContent = weight ? `${weight.toFixed(2)} g each` : '–';
+          weightSpan.style.fontWeight = '600';
+          weightSpan.style.minWidth = '110px';
+          textCol.appendChild(weightSpan);
+
+          const countSpan = document.createElement('span');
+          countSpan.textContent = `count: ${count ? count.toString() : '0'}`;
+          countSpan.style.fontWeight = '700';
+          countSpan.style.color = '#0f9d58';
+          countSpan.style.padding = '4px 10px';
+          countSpan.style.borderRadius = '8px';
+          countSpan.style.background = 'rgba(15,157,88,0.12)';
+          countSpan.style.minWidth = '110px';
+          countSpan.style.display = 'inline-flex';
+          countSpan.style.alignItems = 'center';
+          countSpan.style.justifyContent = 'center';
+          textCol.appendChild(countSpan);
 
           row.appendChild(textCol);
           list.appendChild(row);
