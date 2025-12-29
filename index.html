@@ -1354,8 +1354,14 @@
               colorBox.style.borderRadius = '6px';
               colorBox.style.border = '1.5px solid #bbb';
               colorBox.style.boxSizing = 'border-box';
-              let cssColor = getCssColor(colorValue);
-              colorBox.style.background = cssColor;
+              // Prüfe auf red-blue für Farbverlauf
+              const colorValueLower = colorValue.toLowerCase().trim();
+              if (colorValueLower === 'red-blue' || colorValueLower === 'redblue') {
+                colorBox.style.background = 'linear-gradient(to right, #f44336, #2196f3)';
+              } else {
+                let cssColor = getCssColor(colorValue);
+                colorBox.style.background = cssColor;
+              }
               wrapper.appendChild(colorBox);
               // Namen und Info-Icon nebeneinander
               const nameInfoRow = document.createElement('div');
