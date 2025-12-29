@@ -1,0 +1,30 @@
+{
+  "name": "PETG Translucent",
+  "product_url": "https://store.anycubic.com/products/petg-filament-translucent?variant=45760709197986&_sasdk=fZGFoaW5kZW4ubm9haEBnbWFpbC5jb20",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "65℃-70℃, 6h-12h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "230-250℃",
+    "Heated Bed Temperature": "60-70℃",
+    "Printing Speed": "50-250mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "69°C",
+    "Elongation at Break": "13%",
+    "Properties": [
+    "- Durable & Impact-resist",
+    "- Water-resist & Weather-resist",
+    "- Chemical-resist",
+    "- Vibrant Colors"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 5,
+    "stiffness": 2,
+    "budgetFriendly": 10,
+    "heatResistance": 3,
+    "printability": 9
+  }
+}
+
+
+
