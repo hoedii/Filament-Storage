@@ -3638,7 +3638,13 @@
             box.style.height = '16px';
             box.style.borderRadius = '4px';
             box.style.border = '1px solid #bbb';
-            box.style.background = getCssColor(c);
+            // Prüfe auf red-blue für Farbverlauf
+            const colorValueLower = String(c || '').toLowerCase().trim();
+            if (colorValueLower === 'red-blue' || colorValueLower === 'redblue') {
+              box.style.background = 'linear-gradient(to right, #f44336, #2196f3)';
+            } else {
+              box.style.background = getCssColor(c);
+            }
             box.style.cursor = 'pointer';
             box.onclick = async (ev) => {
               ev.stopPropagation();
