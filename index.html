@@ -552,7 +552,7 @@
 
   <footer style="text-align: center; margin-top: 40px;">
     <span id="footerText" style="font-size: 12px; color: #888;">
-      © 2025 piodeer. All rights reserved. Created with
+      © 2026 piodeer. All rights reserved. Created with
       <a href="https://github.com/hoedii/Filament-Storage" style="color: inherit; text-decoration: none;" target="_blank">Github</a>, Cursor & ChatGPT.
     </span>
   </footer>
@@ -1359,6 +1359,8 @@
               const colorValueLower = colorValue.toLowerCase().trim();
               if (colorValueLower === 'red-blue' || colorValueLower === 'redblue') {
                 colorBox.style.background = 'linear-gradient(to right, #f44336, #2196f3)';
+              } else if (colorValueLower === 'rainbow' || colorValueLower.includes('rainbow')) {
+                colorBox.style.background = 'linear-gradient(to right, #9c27b0, #4caf50, #ffeb3b, #e91e63)';
               } else {
                 let cssColor = getCssColor(colorValue);
                 colorBox.style.background = cssColor;
@@ -1374,46 +1376,6 @@
               const colorDiv = document.createElement('div');
               colorDiv.textContent = row[key] || '';
               nameInfoRow.appendChild(colorDiv);
-              // Info-Icon ggf. rechts daneben
-              (async () => {
-                const material = safeEnc(row['Material']);
-                const hersteller = safeEnc(row['Hersteller'] || row['Manufacturer']);
-                const farbe = safeEnc(row['Farbe'] || row['Color']);
-                const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
-                const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}.json`;
-                let hasImage = false, hasSettings = false;
-                try {
-                  const imgRes = await fetch(imgUrl, { method: 'HEAD' });
-                  hasImage = imgRes.ok;
-                } catch {}
-                try {
-                  const setRes = await fetch(settingsUrl, { method: 'HEAD' });
-                  hasSettings = setRes.ok;
-                } catch {}
-                if (hasImage || hasSettings) {
-                  const infoBtn = document.createElement('span');
-                  infoBtn.textContent = 'i';
-                  infoBtn.style.display = 'inline-flex';
-                  infoBtn.style.alignItems = 'center';
-                  infoBtn.style.justifyContent = 'center';
-                  infoBtn.style.width = '18px';
-                  infoBtn.style.height = '18px';
-                  infoBtn.style.fontSize = '13px';
-                  infoBtn.style.background = '#eee';
-                  infoBtn.style.color = '#888';
-                  infoBtn.style.borderRadius = '50%';
-                  infoBtn.style.cursor = 'pointer';
-                  infoBtn.style.border = 'none';
-                  infoBtn.style.userSelect = 'none';
-                  infoBtn.title = 'Show filament image/settings';
-                  infoBtn.onclick = (e) => {
-                    e.stopPropagation();
-                    showFilamentImage(row);
-                  };
-                  nameInfoRow.appendChild(infoBtn);
-                }
-              })();
-              
 
               wrapper.appendChild(nameInfoRow);
               td.appendChild(wrapper);
@@ -1422,6 +1384,15 @@
             }
             tr.appendChild(td);
           });
+          // Click-Handler auf gesamte Zeile: Öffne Filament-Informationen
+          tr.style.cursor = 'pointer';
+          tr.onclick = (e) => {
+            // Verhindere, dass Klicks auf interaktive Elemente die Zeile triggern
+            if (e.target.closest('button') || e.target.closest('.filter-toggle') || e.target.closest('.filter-popup')) {
+              return;
+            }
+            showFilamentImage(row);
+          };
           tbody.appendChild(tr);
         });
       }
@@ -3642,6 +3613,8 @@
             const colorValueLower = String(c || '').toLowerCase().trim();
             if (colorValueLower === 'red-blue' || colorValueLower === 'redblue') {
               box.style.background = 'linear-gradient(to right, #f44336, #2196f3)';
+            } else if (colorValueLower === 'rainbow' || colorValueLower.includes('rainbow')) {
+              box.style.background = 'linear-gradient(to right, #9c27b0, #4caf50, #ffeb3b, #e91e63)';
             } else {
               box.style.background = getCssColor(c);
             }
