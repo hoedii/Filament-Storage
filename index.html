@@ -570,6 +570,8 @@
     let lockedFilters = null;
     // Restricted link mode: allowed spool IDs (filled when ?link= present)
     let allowedSpoolIds = null; // Set<string> or null when unrestricted
+    // Laser-able materials from lasering.json
+    let laserableMaterials = [];
 
     function getLinkCode() {
       try {
@@ -592,6 +594,47 @@
       } catch {
         allowedSpoolIds = new Set();
       }
+    }
+
+    // Lade lasering.json mit laser-baren Materialien
+    async function loadLaserableMaterials() {
+      try {
+        // Versuche zuerst von GitHub zu laden
+        let resp = await fetch('https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/lasering.json', { cache: 'no-store' });
+        
+        // Fallback: versuche lokal zu laden
+        if (!resp.ok) {
+          resp = await fetch('./lasering.json', { cache: 'no-store' });
+        }
+        
+        // Fallback 2: versuche im gleichen Verzeichnis
+        if (!resp.ok) {
+          resp = await fetch('lasering.json', { cache: 'no-store' });
+        }
+        
+        if (resp.ok) {
+          const data = await resp.json();
+          if (data.laserableMaterials && Array.isArray(data.laserableMaterials)) {
+            laserableMaterials = data.laserableMaterials;
+            console.log('Laserable materials loaded:', laserableMaterials);
+          }
+        } else {
+          console.log('lasering.json nicht gefunden');
+        }
+      } catch (e) {
+        // Fehler beim Laden von lasering.json ist nicht kritisch
+        console.log('Error loading lasering.json:', e);
+      }
+    }
+
+    // Prüfe, ob Material + Farbe laser-bar sind
+    function isLaserable(material, color) {
+      if (!laserableMaterials || laserableMaterials.length === 0) return false;
+      const result = laserableMaterials.some(item => 
+        String(item.material || '').trim().toLowerCase() === String(material || '').trim().toLowerCase() &&
+        String(item.color || '').trim().toLowerCase() === String(color || '').trim().toLowerCase()
+      );
+      return result;
     }
     // --- Live Search (typeahead) ---
     (function setupLiveSearch() {
@@ -1345,18 +1388,54 @@
             } else if (key === 'Farbe' || key === 'Color') {
               const wrapper = document.createElement('div');
               wrapper.style.display = 'flex';
-              wrapper.style.alignItems = 'flex-start';
+              wrapper.style.alignItems = 'center';
               wrapper.style.justifyContent = 'flex-start';
+              wrapper.style.gap = '10px';
+              
+              // Prüfe, ob Material laser-bar ist
+              const material = row['Material'] || '';
+              const color = row[key] || '';
+              const isLaser = isLaserable(material, color);
+              console.log('Checking laser for:', { material, color, key, isLaser, laserableMaterials });
+              
+              // Lasersymbol LINKS (oder Platzhalter wenn nicht laser-bar)
+              if (isLaser) {
+                const laserLink = document.createElement('a');
+                laserLink.href = 'https://hoedii.github.io/laserparameter/';
+                laserLink.target = '_blank';
+                laserLink.style.display = 'inline-flex';
+                laserLink.style.alignItems = 'center';
+                laserLink.style.cursor = 'pointer';
+                laserLink.style.textDecoration = 'none';
+                laserLink.style.flexShrink = '0';
+                laserLink.title = 'Laserparameter ansehen';
+                const laserImg = document.createElement('img');
+                laserImg.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/laser.png';
+                laserImg.style.width = '18px';
+                laserImg.style.height = '18px';
+                laserImg.style.display = 'inline-block';
+                laserImg.style.pointerEvents = 'none';
+                laserLink.appendChild(laserImg);
+                wrapper.appendChild(laserLink);
+              } else {
+                // Platzhalter damit Vierecke untereinander ausgerichtet sind
+                const spacer = document.createElement('div');
+                spacer.style.width = '18px';
+                spacer.style.height = '18px';
+                spacer.style.flexShrink = '0';
+                wrapper.appendChild(spacer);
+              }
+              
               // Farbfeld
               const colorValue = row[key] || '';
               const colorBox = document.createElement('span');
               colorBox.style.display = 'inline-block';
               colorBox.style.width = '22px';
               colorBox.style.height = '22px';
-              colorBox.style.marginRight = '10px';
               colorBox.style.borderRadius = '6px';
               colorBox.style.border = '1.5px solid #bbb';
               colorBox.style.boxSizing = 'border-box';
+              colorBox.style.flexShrink = '0';
               // Prüfe auf red-blue für Farbverlauf
               const colorValueLower = colorValue.toLowerCase().trim();
               if (colorValueLower === 'red-blue' || colorValueLower === 'redblue') {
@@ -1368,6 +1447,7 @@
                 colorBox.style.background = cssColor;
               }
               wrapper.appendChild(colorBox);
+              
               // Namen und Info-Icon nebeneinander
               const nameInfoRow = document.createElement('div');
               nameInfoRow.style.display = 'flex';
@@ -2145,7 +2225,33 @@
             herstellerDiv.style.color = '#888';
             herstellerDiv.style.fontWeight = 'normal';
             herstellerDiv.style.marginTop = '2px';
-            herstellerDiv.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
+            herstellerDiv.style.display = 'flex';
+            herstellerDiv.style.alignItems = 'center';
+            herstellerDiv.style.gap = '8px';
+            const herstellerText = document.createElement('span');
+            herstellerText.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
+            herstellerDiv.appendChild(herstellerText);
+            
+            // Prüfe, ob Material laser-bar ist und zeige Symbol im Popup
+            if (isLaserable(material, farbe)) {
+              const laserLink = document.createElement('a');
+              laserLink.href = 'https://hoedii.github.io/laserparameter/';
+              laserLink.target = '_blank';
+              laserLink.style.display = 'inline-flex';
+              laserLink.style.alignItems = 'center';
+              laserLink.style.cursor = 'pointer';
+              laserLink.style.textDecoration = 'none';
+              laserLink.title = 'Laserparameter ansehen';
+              const laserImg = document.createElement('img');
+              laserImg.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/laser.png';
+              laserImg.style.width = '20px';
+              laserImg.style.height = '20px';
+              laserImg.style.display = 'inline-block';
+              laserImg.style.pointerEvents = 'none';
+              laserLink.appendChild(laserImg);
+              herstellerDiv.appendChild(laserLink);
+            }
+            
             titleDiv.textContent = '';
             titleDiv.appendChild(nameDiv);
             titleDiv.appendChild(herstellerDiv);
@@ -2499,7 +2605,33 @@
             herstellerDiv.style.color = '#888';
             herstellerDiv.style.fontWeight = 'normal';
             herstellerDiv.style.marginTop = '2px';
-            herstellerDiv.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
+            herstellerDiv.style.display = 'flex';
+            herstellerDiv.style.alignItems = 'center';
+            herstellerDiv.style.gap = '8px';
+            const herstellerText = document.createElement('span');
+            herstellerText.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
+            herstellerDiv.appendChild(herstellerText);
+            
+            // Prüfe, ob Material laser-bar ist und zeige Symbol im Popup
+            if (isLaserable(material, farbe)) {
+              const laserLink = document.createElement('a');
+              laserLink.href = 'https://hoedii.github.io/laserparameter/';
+              laserLink.target = '_blank';
+              laserLink.style.display = 'inline-flex';
+              laserLink.style.alignItems = 'center';
+              laserLink.style.cursor = 'pointer';
+              laserLink.style.textDecoration = 'none';
+              laserLink.title = 'Laserparameter ansehen';
+              const laserImg = document.createElement('img');
+              laserImg.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/laser.png';
+              laserImg.style.width = '20px';
+              laserImg.style.height = '20px';
+              laserImg.style.display = 'inline-block';
+              laserImg.style.pointerEvents = 'none';
+              laserLink.appendChild(laserImg);
+              herstellerDiv.appendChild(laserLink);
+            }
+            
             titleDiv.textContent = '';
             titleDiv.appendChild(nameDiv);
             titleDiv.appendChild(herstellerDiv);
@@ -3072,6 +3204,7 @@
     }
 
     // Initial load
+    loadLaserableMaterials();
     loadData({ showLoader: true });
     // Auto-refresh every 60 seconds (background, with popup if changed)
     setInterval(() => {
