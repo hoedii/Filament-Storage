@@ -1,6 +1,28 @@
-PLA Matte = Black
-PLA Basic = Black
-ABS = Black
-PETG = Black
-PLA Matte = Sky Blue
-PLA Basic = Brown
+{
+  "laserableMaterials": [
+    {
+      "material": "PLA Matte",
+      "color": "Black"
+    },
+    {
+      "material": "PLA Basic",
+      "color": "Black"
+    },
+    {
+      "material": "ABS",
+      "color": "Black"
+    },
+    {
+      "material": "PETG",
+      "color": "Black"
+    },
+    {
+      "material": "PLA Matte",
+      "color": "Sky Blue"
+    },
+    {
+      "material": "PLA Basic",
+      "color": "Brown"
+    }
+  ]
+}
