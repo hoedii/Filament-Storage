@@ -530,8 +530,9 @@
           </div>
         </div>
       </div>
-      <div style="display:flex;gap:12px;align-items:center;margin-top:8px;justify-content:space-between;">
+      <div style="display:flex;gap:12px;align-items:center;margin-top:8px;">
         <label id="resinToggle" style="display:flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid #e6eef7;border-radius:10px;background:#f8fbff;"><input id="includeResin" type="checkbox" checked /> Resin allowed</label>
+        <label id="laserableToggle" style="display:flex;gap:8px;align-items:center;padding:8px 12px;border:1px solid #e6eef7;border-radius:10px;background:#f8fbff;"><input id="includeLaserable" type="checkbox" /> Laserable only</label>
       </div>
       <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:6px;">
         <button id="searchCancel" style="padding:8px 16px;border-radius:8px;border:1px solid #e0e6ed;background:#fff;color:#333;cursor:pointer;">Close</button>
@@ -3625,6 +3626,7 @@
           printability: levelToWeight(document.getElementById('wPrintGroup').dataset.level)
         };
         const allowResin = !!document.getElementById('includeResin').checked;
+        const includeLaserable = !!document.getElementById('includeLaserable').checked;
         const resultsDiv = document.getElementById('searchResults');
         resultsDiv.innerHTML = '<div style="opacity:0.8;">Searching…</div>';
         // Aggregate by Material only (manufacturer ignored), collect manufacturers and colors
@@ -3644,6 +3646,18 @@
           if (man) groups.get(mat).manufacturers.add(man);
           if (col) groups.get(mat).colors.add(col);
         });
+
+        // Filter colors if laserable is enabled
+        if (includeLaserable) {
+          for (const g of groups.values()) {
+            const laserableColors = Array.from(g.colors).filter(col => isLaserable(g.material, col));
+            if (laserableColors.length === 0) {
+              groups.delete(g.material);
+            } else {
+              g.colors = new Set(laserableColors);
+            }
+          }
+        }
 
         // Fetch ratings JSON per group
         const items = [];
