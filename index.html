@@ -252,6 +252,48 @@
       accent-color: var(--primary);
     }
 
+    /* Laser Quality Badge Styles */
+    .quality-badge {
+      padding: 0;
+      border-radius: 0;
+      font-size: 11px;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      width: auto;
+      height: auto;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    .quality-badge img {
+      width: 16px;
+      height: 16px;
+      filter: drop-shadow(0 0 2px currentColor);
+      image-rendering: crisp-edges;
+    }
+
+    .quality-badge.no-glow img {
+      filter: none;
+      image-rendering: crisp-edges;
+    }
+
+    .quality-good {
+      color: #018644;
+    }
+
+    .quality-mid {
+      color: #ffa500;
+    }
+
+    .quality-bad {
+      color: #ff4444;
+    }
+
     /* Dark mode inputs/selects */
     body.dark input, body.dark select, body.dark textarea {
       background: #0d1117 !important;
@@ -561,6 +603,8 @@
   <script>
     // API liefert filamentstats + heatinserts
     const sheetUrl = 'https://script.google.com/macros/s/AKfycbz6Em1CIY2k-kuKvK8WX8fU3ZKgZm-YRJFxJ-JwWGRA7n2dTaT2Dsd1qgoAftJhUbMOGw/exec';
+    const LASER_API_URL = 'https://script.google.com/macros/s/AKfycbyztXGJlFEwwIe2Iw4fpumNgeHU-fDgmRCtPhM0cHkX7VRyiU2uicBYooH2Ln7sv4XV1w/exec';
+    const MACHINE_IMAGE_BASE = 'https://raw.githubusercontent.com/hoedii/laserparameter/main/media/';
     let originalData = [];
     let heatInserts = [];
     let heatLoading = false;
@@ -573,6 +617,9 @@
     let allowedSpoolIds = null; // Set<string> or null when unrestricted
     // Laser-able materials from lasering.json
     let laserableMaterials = [];
+    // Quality SVG caching for laser symbols
+    let qualitySvgCache = { good: null, mid: null, bad: null };
+    let laserParameters = []; // Cached laser parameters data
 
     function getLinkCode() {
       try {
@@ -630,13 +677,173 @@
 
     // Prüfe, ob Material + Farbe laser-bar sind
     function isLaserable(material, color) {
-      if (!laserableMaterials || laserableMaterials.length === 0) return false;
-      const result = laserableMaterials.some(item => 
-        String(item.material || '').trim().toLowerCase() === String(material || '').trim().toLowerCase() &&
-        String(item.color || '').trim().toLowerCase() === String(color || '').trim().toLowerCase()
-      );
-      return result;
+      const matNorm = String(material || '').trim().toLowerCase();
+      const colNorm = String(color || '').trim().toLowerCase();
+      
+      if (!matNorm || !colNorm) return false;
+      
+      // Prüfe in laserableMaterials (aus lasering.json)
+      if (laserableMaterials && laserableMaterials.length > 0) {
+        const result = laserableMaterials.some(item => 
+          String(item.material || '').trim().toLowerCase() === matNorm &&
+          String(item.color || '').trim().toLowerCase() === colNorm
+        );
+        if (result) return true;
+      }
+      
+      // Prüfe auch in laserParameters (aus Google Sheets API)
+      // Falls die Quality in der Laser Settings Liste vorhanden ist, ist es laser-bar
+      if (laserParameters && laserParameters.length > 0) {
+        for (const entry of laserParameters) {
+          const entryMat = String(entry.Material || '').trim().toLowerCase();
+          const entryCol = String(entry.Color || '').trim().toLowerCase();
+          
+          // Exakter Match
+          if (entryMat === matNorm && entryCol === colNorm) {
+            return true;
+          }
+          
+          // Fuzzy Match für Varianten mit korrekter Word Boundary
+          if (entryCol === colNorm) {
+            // "pla basic" matches "pla"
+            if (matNorm.startsWith(entryMat)) {
+              const afterMaterial = matNorm.substring(entryMat.length).trim();
+              if (afterMaterial === '' || /^[\s\-]/.test(matNorm.substring(entryMat.length))) {
+                return true;
+              }
+            }
+            // "pla" matches "pla basic"
+            if (entryMat.startsWith(matNorm)) {
+              const afterMaterial = entryMat.substring(matNorm.length).trim();
+              if (afterMaterial === '' || /^[\s\-]/.test(entryMat.substring(matNorm.length))) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+      
+      return false;
     }
+
+    // Initialize quality SVGs with dynamic color replacement
+    async function initializeQualitySvgs() {
+      const colors = { good: "#00ff88", mid: "#ffa500", bad: "#ff4444" };
+      
+      try {
+        const response = await fetch(`${MACHINE_IMAGE_BASE}lasersymbol.svg`);
+        let baseSvg = await response.text();
+        
+        for (const [quality, color] of Object.entries(colors)) {
+          let svgContent = baseSvg
+            .replace(/#000000/gi, color)
+            .replace(/#000/gi, color)
+            .replace(/black/gi, color)
+            .replace(/fill=["']#000000["']/gi, `fill="${color}"`)
+            .replace(/fill=["']#000["']/gi, `fill="${color}"`)
+            .replace(/stroke=["']#000000["']/gi, `stroke="${color}"`)
+            .replace(/stroke=["']#000["']/gi, `stroke="${color}"`);
+          
+          const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+          qualitySvgCache[quality] = URL.createObjectURL(blob);
+        }
+      } catch (error) {
+        console.error('Failed to initialize quality SVGs:', error);
+      }
+    }
+
+    // Get quality badge HTML for a given quality value
+    function getQualityBadge(quality) {
+      if (!quality) return "";
+      const q = String(quality || "").toLowerCase().trim();
+      const svgUrl = qualitySvgCache[q];
+      
+      let colorClass = q === "good" ? "quality-good" : q === "mid" ? "quality-mid" : q === "bad" ? "quality-bad" : "";
+      if (!colorClass || !svgUrl) return "";
+      
+      return `<span class="quality-badge ${colorClass}" title="${escapeHtml(quality)}"><img src="${svgUrl}" alt="${escapeHtml(quality)}" /></span>`;
+    }
+
+    // Escape HTML special characters
+    function escapeHtml(text) {
+      const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return String(text || '').replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Load laser parameters from Google Sheets API
+    async function loadLaserParameters() {
+      try {
+        const response = await fetch(LASER_API_URL);
+        if (!response.ok) {
+          console.error('Failed to fetch laser parameters:', response.status);
+          return [];
+        }
+        const data = await response.json();
+        laserParameters = Array.isArray(data) ? data : (data.data || []);
+        return laserParameters;
+      } catch (error) {
+        console.error('Error loading laser parameters:', error);
+        return [];
+      }
+    }
+
+    // Get quality for a specific material and color from laser parameters
+    function getLaserQualityForFilament(material, color) {
+      if (!laserParameters || laserParameters.length === 0) return null;
+      
+      const matNorm = String(material || '').trim().toLowerCase();
+      const colNorm = String(color || '').trim().toLowerCase();
+      
+      if (!matNorm || !colNorm) return null;
+      
+      // First try exact match
+      for (const entry of laserParameters) {
+        const entryMat = String(entry.Material || '').trim().toLowerCase();
+        const entryCol = String(entry.Color || '').trim().toLowerCase();
+        
+        if (entryMat === matNorm && entryCol === colNorm) {
+          return String(entry.Quality || '').toLowerCase().trim();
+        }
+      }
+      
+      // If no exact match, try fuzzy match for material variants
+      // e.g., "PLA Basic Brown" matches "PLA Brown" in laser list
+      // or "PLA Matte" matches "PLA" in laser list
+      for (const entry of laserParameters) {
+        const entryMat = String(entry.Material || '').trim().toLowerCase();
+        const entryCol = String(entry.Color || '').trim().toLowerCase();
+        
+        if (entryCol === colNorm) {
+          // Check if the search material starts with the laser material and has proper word boundary
+          // e.g., "pla basic" has "pla" followed by space/hyphen
+          if (matNorm.startsWith(entryMat)) {
+            const afterMaterial = matNorm.substring(entryMat.length).trim();
+            // Allow if nothing after (exact match) or separated by space/hyphen
+            if (afterMaterial === '' || /^[\s\-]/.test(matNorm.substring(entryMat.length))) {
+              return String(entry.Quality || '').toLowerCase().trim();
+            }
+          }
+          // Also check reverse: laser list has "PLA Basic", search is "PLA"
+          // e.g., search "pla", laser has "pla basic"
+          if (entryMat.startsWith(matNorm)) {
+            const afterMaterial = entryMat.substring(matNorm.length).trim();
+            // Allow if nothing after (exact match) or separated by space/hyphen
+            if (afterMaterial === '' || /^[\s\-]/.test(entryMat.substring(matNorm.length))) {
+              return String(entry.Quality || '').toLowerCase().trim();
+            }
+          }
+        }
+      }
+      
+      return null;
+    }
+
     // --- Live Search (typeahead) ---
     (function setupLiveSearch() {
       const input = document.getElementById('liveSearchInput');
@@ -1249,7 +1456,13 @@
       };
     }
     // Nach dem initialen Rendern und nach jedem Daten-Reload Handler setzen
-    document.addEventListener('DOMContentLoaded', setupCreateLinkBtnHandler);
+    document.addEventListener('DOMContentLoaded', async function() {
+      setupCreateLinkBtnHandler();
+      // Initialize quality SVGs and load laser parameters on page load
+      await initializeQualitySvgs();
+      await loadLaserableMaterials();
+      await loadLaserParameters();
+    });
     // Auch nach jedem Daten-Reload sicherstellen
     function afterDataReload() {
       setupCreateLinkBtnHandler();
@@ -1399,25 +1612,30 @@
               const isLaser = isLaserable(material, color);
               console.log('Checking laser for:', { material, color, key, isLaser, laserableMaterials });
               
-              // Lasersymbol LINKS (oder Platzhalter wenn nicht laser-bar)
+              // Lasersymbol LINKS mit Quality-Badge
               if (isLaser) {
-                const laserLink = document.createElement('a');
-                laserLink.href = 'https://hoedii.github.io/laserparameter/';
-                laserLink.target = '_blank';
-                laserLink.style.display = 'inline-flex';
-                laserLink.style.alignItems = 'center';
-                laserLink.style.cursor = 'pointer';
-                laserLink.style.textDecoration = 'none';
-                laserLink.style.flexShrink = '0';
-                laserLink.title = 'Laserparameter ansehen';
-                const laserImg = document.createElement('img');
-                laserImg.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/laser.png';
-                laserImg.style.width = '18px';
-                laserImg.style.height = '18px';
-                laserImg.style.display = 'inline-block';
-                laserImg.style.pointerEvents = 'none';
-                laserLink.appendChild(laserImg);
-                wrapper.appendChild(laserLink);
+                const quality = getLaserQualityForFilament(material, color);
+                if (quality) {
+                  const badgeHtml = getQualityBadge(quality);
+                  if (badgeHtml) {
+                    const badgeContainerSpan = document.createElement('span');
+                    badgeContainerSpan.innerHTML = badgeHtml;
+                    badgeContainerSpan.style.cursor = 'pointer';
+                    badgeContainerSpan.style.title = 'Laserparameter ansehen';
+                    // Add no-glow class for table view (removes drop-shadow effect)
+                    const badgeSpan = badgeContainerSpan.querySelector('.quality-badge');
+                    if (badgeSpan) {
+                      badgeSpan.classList.add('no-glow');
+                    }
+                    badgeContainerSpan.onclick = (e) => {
+                      e.stopPropagation();
+                      // Open Laser Settings Library with this filament's parameters
+                      window.lastLaserFilament = { material, color, row };
+                      window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
+                    };
+                    wrapper.appendChild(badgeContainerSpan);
+                  }
+                }
               } else {
                 // Platzhalter damit Vierecke untereinander ausgerichtet sind
                 const spacer = document.createElement('div');
@@ -2233,24 +2451,26 @@
             herstellerText.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
             herstellerDiv.appendChild(herstellerText);
             
-            // Prüfe, ob Material laser-bar ist und zeige Symbol im Popup
+            // Prüfe, ob Material laser-bar ist und zeige Symbol mit Quality im Popup
             if (isLaserable(material, farbe)) {
-              const laserLink = document.createElement('a');
-              laserLink.href = 'https://hoedii.github.io/laserparameter/';
-              laserLink.target = '_blank';
-              laserLink.style.display = 'inline-flex';
-              laserLink.style.alignItems = 'center';
-              laserLink.style.cursor = 'pointer';
-              laserLink.style.textDecoration = 'none';
-              laserLink.title = 'Laserparameter ansehen';
-              const laserImg = document.createElement('img');
-              laserImg.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/laser.png';
-              laserImg.style.width = '20px';
-              laserImg.style.height = '20px';
-              laserImg.style.display = 'inline-block';
-              laserImg.style.pointerEvents = 'none';
-              laserLink.appendChild(laserImg);
-              herstellerDiv.appendChild(laserLink);
+              const quality = getLaserQualityForFilament(material, farbe);
+              if (quality) {
+                const badgeHtml = getQualityBadge(quality);
+                if (badgeHtml) {
+                  const badgeSpan = document.createElement('span');
+                  badgeSpan.innerHTML = badgeHtml;
+                  badgeSpan.style.cursor = 'pointer';
+                  badgeSpan.title = 'Laserparameter ansehen';
+                  badgeSpan.onclick = (e) => {
+                    e.stopPropagation();
+                    // Open Laser Settings Library with this filament's parameters
+                    // For now, add to window to track the last clicked filament
+                    window.lastLaserFilament = { material, farbe, row };
+                    window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
+                  };
+                  herstellerDiv.appendChild(badgeSpan);
+                }
+              }
             }
             
             titleDiv.textContent = '';
@@ -2613,24 +2833,26 @@
             herstellerText.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
             herstellerDiv.appendChild(herstellerText);
             
-            // Prüfe, ob Material laser-bar ist und zeige Symbol im Popup
+            // Prüfe, ob Material laser-bar ist und zeige Symbol mit Quality im Popup
             if (isLaserable(material, farbe)) {
-              const laserLink = document.createElement('a');
-              laserLink.href = 'https://hoedii.github.io/laserparameter/';
-              laserLink.target = '_blank';
-              laserLink.style.display = 'inline-flex';
-              laserLink.style.alignItems = 'center';
-              laserLink.style.cursor = 'pointer';
-              laserLink.style.textDecoration = 'none';
-              laserLink.title = 'Laserparameter ansehen';
-              const laserImg = document.createElement('img');
-              laserImg.src = 'https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/laser.png';
-              laserImg.style.width = '20px';
-              laserImg.style.height = '20px';
-              laserImg.style.display = 'inline-block';
-              laserImg.style.pointerEvents = 'none';
-              laserLink.appendChild(laserImg);
-              herstellerDiv.appendChild(laserLink);
+              const quality = getLaserQualityForFilament(material, farbe);
+              if (quality) {
+                const badgeHtml = getQualityBadge(quality);
+                if (badgeHtml) {
+                  const badgeSpan = document.createElement('span');
+                  badgeSpan.innerHTML = badgeHtml;
+                  badgeSpan.style.cursor = 'pointer';
+                  badgeSpan.title = 'Laserparameter ansehen';
+                  badgeSpan.onclick = (e) => {
+                    e.stopPropagation();
+                    // Open Laser Settings Library with this filament's parameters
+                    // For now, add to window to track the last clicked filament
+                    window.lastLaserFilament = { material, farbe, row };
+                    window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
+                  };
+                  herstellerDiv.appendChild(badgeSpan);
+                }
+              }
             }
             
             titleDiv.textContent = '';
@@ -3154,26 +3376,31 @@
           if (currentView === 'accessories') {
             renderHeatInserts('heatInlineContent');
           }
-          renderTable(data);
-          applyUrlFiltersAndLock();
-          applyFilters();
+          
+          // Ensure laser parameters are loaded BEFORE rendering the table
+          Promise.resolve(loadLaserParameters()).then(() => {
+            renderTable(data);
+            applyUrlFiltersAndLock();
+            applyFilters();
+            // Notify listeners (e.g., live search) that data changed
+            window.dispatchEvent(new Event('data-reloaded'));
+            const keys = Object.keys(data[0]);
+            if (keys.length > 0) {
+              filters[keys[0]] = data[0][keys[0]];
+              applyFilters();
+              filters[keys[0]] = '';
+              applyFilters();
+            }
+            if (showUpdatePopup && changed) {
+              showDataUpdatePopup();
+            }
+            // Nach jedem Laden der Daten: Link-Manager-Modal schließen
+            const linkManagerModal = document.getElementById('linkManagerModal');
+            if (linkManagerModal) linkManagerModal.style.display = 'none';
+          });
+          
           // In restricted link mode, load allowed spool IDs once
           ensureAllowedSpoolIdsLoaded();
-          // Notify listeners (e.g., live search) that data changed
-          window.dispatchEvent(new Event('data-reloaded'));
-          const keys = Object.keys(data[0]);
-          if (keys.length > 0) {
-            filters[keys[0]] = data[0][keys[0]];
-            applyFilters();
-            filters[keys[0]] = '';
-            applyFilters();
-          }
-          if (showUpdatePopup && changed) {
-            showDataUpdatePopup();
-          }
-          // Nach jedem Laden der Daten: Link-Manager-Modal schließen
-          const linkManagerModal = document.getElementById('linkManagerModal');
-          if (linkManagerModal) linkManagerModal.style.display = 'none';
         })
         .catch((err) => {
           clearTimeout(timeout);
@@ -3204,13 +3431,16 @@
       }, 4000);
     }
 
-    // Initial load
-    loadLaserableMaterials();
-    loadData({ showLoader: true });
-    // Auto-refresh every 60 seconds (background, with popup if changed)
-    setInterval(() => {
-      loadData({ showLoader: false, showUpdatePopup: true });
-    }, 60000);
+    // Initial load - ensure laser parameters are loaded first
+    (async function initializeApp() {
+      loadLaserableMaterials();
+      await loadLaserParameters();
+      loadData({ showLoader: true });
+      // Auto-refresh every 60 seconds (background, with popup if changed)
+      setInterval(() => {
+        loadData({ showLoader: false, showUpdatePopup: true });
+      }, 60000);
+    })();
 
     // PDF-Export Funktionalität
     document.getElementById('printBtn').onclick = function() {
