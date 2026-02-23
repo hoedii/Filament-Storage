@@ -719,15 +719,22 @@
           if (entryCol === colNorm) {
             // "pla basic" matches "pla"
             if (matNorm.startsWith(entryMat)) {
-              const afterMaterial = matNorm.substring(entryMat.length).trim();
-              if (afterMaterial === '' || /^[\s\-\+]/.test(matNorm.substring(entryMat.length))) {
+              const rawAfter = matNorm.substring(entryMat.length);
+              const afterMaterial = rawAfter.trim();
+              // do not match when suffix begins with "like" (e.g. "ABS-Like")
+              if (afterMaterial.toLowerCase().startsWith('like') || rawAfter.toLowerCase().startsWith('-like')) {
+                // skip
+              } else if (afterMaterial === '' || /^[\s\-\+]/.test(rawAfter)) {
                 return true;
               }
             }
             // "pla" matches "pla basic"
             if (entryMat.startsWith(matNorm)) {
-              const afterMaterial = entryMat.substring(matNorm.length).trim();
-              if (afterMaterial === '' || /^[\s\-\+]/.test(entryMat.substring(matNorm.length))) {
+              const rawAfter = entryMat.substring(matNorm.length);
+              const afterMaterial = rawAfter.trim();
+              if (afterMaterial.toLowerCase().startsWith('like') || rawAfter.toLowerCase().startsWith('-like')) {
+                // skip
+              } else if (afterMaterial === '' || /^[\s\-\+]/.test(rawAfter)) {
                 return true;
               }
             }
@@ -856,18 +863,23 @@
           // Check if the search material starts with the laser material and has proper word boundary
           // e.g., "pla basic" has "pla" followed by space/hyphen
           if (matNorm.startsWith(entryMat)) {
-            const afterMaterial = matNorm.substring(entryMat.length).trim();
-            // Allow if nothing after (exact match) or separated by space/hyphen
-            if (afterMaterial === '' || /^[\s\-]/.test(matNorm.substring(entryMat.length))) {
+            const rawAfter = matNorm.substring(entryMat.length);
+            const afterMaterial = rawAfter.trim();
+            // ignore cases like "ABS-Like" which are not genuine ABS variants
+            if (afterMaterial.toLowerCase().startsWith('like') || rawAfter.toLowerCase().startsWith('-like')) {
+              // skip
+            } else if (afterMaterial === '' || /^[\s\-]/.test(rawAfter)) {
               return String(entry.Quality || '').toLowerCase().trim();
             }
           }
           // Also check reverse: laser list has "PLA Basic", search is "PLA"
           // e.g., search "pla", laser has "pla basic"
           if (entryMat.startsWith(matNorm)) {
-            const afterMaterial = entryMat.substring(matNorm.length).trim();
-            // Allow if nothing after (exact match) or separated by space/hyphen
-            if (afterMaterial === '' || /^[\s\-]/.test(entryMat.substring(matNorm.length))) {
+            const rawAfter = entryMat.substring(matNorm.length);
+            const afterMaterial = rawAfter.trim();
+            if (afterMaterial.toLowerCase().startsWith('like') || rawAfter.toLowerCase().startsWith('-like')) {
+              // skip
+            } else if (afterMaterial === '' || /^[\s\-]/.test(rawAfter)) {
               return String(entry.Quality || '').toLowerCase().trim();
             }
           }
@@ -916,7 +928,14 @@
             // Score per term with preference: exact id > startsWith > includes
             if (id === t) { score += 8; termMatched = true; }
             if (!termMatched && id.startsWith(t)) { score += 5; termMatched = true; }
-            if (!termMatched && mat.startsWith(t)) { score += 4; termMatched = true; }
+            if (!termMatched && mat.startsWith(t)) {
+              // avoid matching "ABS-Like" when searching for "abs"
+              const rest = mat.substring(t.length);
+              if (!/^[-]?like/.test(rest)) {
+                score += 4;
+                termMatched = true;
+              }
+            }
             if (!termMatched && man.startsWith(t)) { score += 2; termMatched = true; }
             if (!termMatched && col.startsWith(t)) { score += 1; termMatched = true; }
             if (!termMatched && fields.some(f => f.includes(t))) { score += 1; termMatched = true; }
