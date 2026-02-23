@@ -228,6 +228,14 @@
     /* Dark mode loader background */
     body.dark #loader { background: rgba(0,0,0,0.5) !important; }
     body.dark #loaderText { color: #e6edf3 !important; }
+    /* Dark mode style for the "Laserable only" toggle label */
+    body.dark #laserableToggle {
+      background: #161b22 !important;
+      border-color: #30363d !important;
+      color: var(--text) !important;
+    }
+    body.dark #laserableToggle input { accent-color: var(--primary) !important; }
+
 
     /* Custom blue checkboxes for popups (material selection) */
     #printRows input[type="checkbox"], #createLinkRows input[type="checkbox"] {
@@ -432,7 +440,7 @@
   </style>
 </head>
 <body>
-  <div id="loader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);z-index:3000;display:none;pointer-events:auto;">
+  <div id="loader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);z-index:3000;pointer-events:auto;">
     <div class="loader-dots">
       <span></span><span></span><span></span>
     </div>
@@ -712,14 +720,14 @@
             // "pla basic" matches "pla"
             if (matNorm.startsWith(entryMat)) {
               const afterMaterial = matNorm.substring(entryMat.length).trim();
-              if (afterMaterial === '' || /^[\s\-]/.test(matNorm.substring(entryMat.length))) {
+              if (afterMaterial === '' || /^[\s\-\+]/.test(matNorm.substring(entryMat.length))) {
                 return true;
               }
             }
             // "pla" matches "pla basic"
             if (entryMat.startsWith(matNorm)) {
               const afterMaterial = entryMat.substring(matNorm.length).trim();
-              if (afterMaterial === '' || /^[\s\-]/.test(entryMat.substring(matNorm.length))) {
+              if (afterMaterial === '' || /^[\s\-\+]/.test(entryMat.substring(matNorm.length))) {
                 return true;
               }
             }
@@ -1011,6 +1019,19 @@
       const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       const initial = saved || (prefersDark ? 'dark' : 'light');
       if (initial === 'dark') document.body.classList.add('dark');
+      // ensure laserable label matches initial theme too
+      const laserLabelInit = document.getElementById('laserableToggle');
+      if (laserLabelInit) {
+        if (initial === 'dark') {
+          laserLabelInit.style.background = '#161b22';
+          laserLabelInit.style.borderColor = '#30363d';
+          laserLabelInit.style.color = 'var(--text)';
+        } else {
+          laserLabelInit.style.background = '#f8fbff';
+          laserLabelInit.style.borderColor = '#e6eef7';
+          laserLabelInit.style.color = '';
+        }
+      }
       const btn = document.getElementById('themeToggle');
       function updateBtn() {
         if (!btn) return;
@@ -1038,6 +1059,19 @@
               inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
               inner.style.color = '';
             }
+          }
+        }
+        // adjust laserable toggle label color
+        const laserLabel = document.getElementById('laserableToggle');
+        if (laserLabel) {
+          if (document.body.classList.contains('dark')) {
+            laserLabel.style.background = '#161b22';
+            laserLabel.style.borderColor = '#30363d';
+            laserLabel.style.color = 'var(--text)';
+          } else {
+            laserLabel.style.background = '#f8fbff';
+            laserLabel.style.borderColor = '#e6eef7';
+            laserLabel.style.color = '';
           }
         }
         updateBtn();
@@ -1139,6 +1173,19 @@
         if (colKey) {
           const values = params[key].split(',');
           filters[colKey] = values.length > 1 ? values : values[0];
+          // if it's the Material column, collapse any PLA variants to a generic "PLA" value
+          if (colKey === 'Material') {
+            const normVal = v => {
+              const s = String(v || '').trim();
+              if (s.toLowerCase().startsWith('pla')) return 'PLA';
+              return v;
+            };
+            if (Array.isArray(filters[colKey])) {
+              filters[colKey] = filters[colKey].map(normVal);
+            } else {
+              filters[colKey] = normVal(filters[colKey]);
+            }
+          }
           lockedFilters[colKey] = filters[colKey];
         }
       }
@@ -1950,7 +1997,19 @@
         optionsWrapper.style.flexDirection = 'column';
         optionsWrapper.style.gap = '8px';
         optionsWrapper.style.whiteSpace = 'normal';
-        const uniqueVals = [...new Set(originalData.map(row => row[key] || ''))].sort();
+        
+        // collapse PLA variants so that "PLA Silk", "PLA +" etc. all appear as "PLA" in the checkbox list
+        const uniqueVals = [...new Set(originalData.map(row => {
+          let v = row[key] || '';
+          if (key === 'Material') {
+            const norm = String(v).trim().toLowerCase();
+            if (norm.startsWith('pla')) {
+              return 'PLA';
+            }
+          }
+          return v;
+        }))].sort();
+
         // Alle-Checkbox
         const allCheckboxLabel = document.createElement('label');
         allCheckboxLabel.style.fontWeight = 'bold';
@@ -2061,18 +2120,27 @@
         filters = { ...lockedFilters };
       }
       const data = originalData.filter(row => {
+        // normalize some values so filters operate on base material names
+        const normalized = { ...row };
+        if (typeof normalized['Material'] === 'string') {
+          const m = normalized['Material'].trim().toLowerCase();
+          if (m.startsWith('pla')) {
+            normalized['Material'] = 'PLA';
+          }
+        }
+
         for (let key in filters) {
           if (filters[key]) {
             if (Array.isArray(filters[key])) {
               if (filters[key].length === 0) return false;
-              if (!filters[key].includes(row[key])) return false;
+              if (!filters[key].includes(normalized[key])) return false;
             } else {
-              if (row[key] !== filters[key]) return false;
+              if (normalized[key] !== filters[key]) return false;
             }
           }
         }
         for (let key in rangeFilters) {
-          const val = parseFloat(row[key]);
+          const val = parseFloat(normalized[key]);
           if (isNaN(val)) return false;
           const min = parseFloat(rangeFilters[key].min.value);
           const max = parseFloat(rangeFilters[key].max.value);
@@ -3941,10 +4009,14 @@
           if (col) groups.get(mat).colors.add(col);
         });
 
-        // Filter colors if laserable is enabled
+        // Filter colors if laserable is enabled. only keep good or mid quality entries
         if (includeLaserable) {
           for (const g of groups.values()) {
-            const laserableColors = Array.from(g.colors).filter(col => isLaserable(g.material, col));
+            const laserableColors = Array.from(g.colors).filter(col => {
+              if (!isLaserable(g.material, col)) return false;
+              const qual = getLaserQualityForFilament(g.material, col);
+              return qual === 'good' || qual === 'mid';
+            });
             if (laserableColors.length === 0) {
               groups.delete(g.material);
             } else {
