@@ -1,0 +1,30 @@
+{
+  "name": "PLA Metal",
+  "product_url": "https://store.anycubic.com/products/pla-metal-filament?_sasdk=fbm9haC5kYWhpbmRlbkBnbWFpbC5jb20",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "55-65℃, 6-8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "200-230℃",
+    "Heated Bed Temperature": "55-65℃",
+    "Printing Speed": "40-250mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "58°C",
+    "Elongation at Break": "4%",
+    "Properties": [
+    "- Metallic Texture & Minimal Layer Lines",
+    "- Controllable Luster, Metallic Details",
+    "- Impact-resist & Resilient",
+    "- No Metal Particles to Damage the Nozzle"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 4,
+    "stiffness": 3,
+    "budgetFriendly": 9,
+    "heatResistance": 1,
+    "printability": 10
+  }
+}
+
+
+
