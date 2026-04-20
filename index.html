@@ -1105,23 +1105,58 @@
     })();
 
     const colorNameMap = {
-      'Dark Blue': '#2d3d5c',
-      'Olive Green': '#5b6037',
-      'Turqoise': '#009cbd',
-      'Sakura Pink': '#f5c7d6',
-      'Purple': '#7f74a7',
-      'Ice Blue': '#a0e8f6',
-      'Metal Champaign': '#b59c70',
-      'Light Blue': '#bfe1f6',
-      'Green-Brown': '#60643f',
-      'Plum': '#942e54',
+      // Graustufen
+      'Black': '#000000',
+      'White': '#ffffff',
+      'Gray': '#808080',
+      'Grey': '#808080',
+      'Silver': '#c0c0c0',
+      'Clear': '#ffffff',
+      // Regenbogen - Rot (0°)
+      'Red': '#ff0000',
+      'Dark Red': '#8b0000',
+      'Crimson': '#dc143c',
+      // Regenbogen - Orange (30°)
+      'Orange': '#ff7f00',
+      'Dark Orange': '#ff8c00',
+      // Regenbogen - Gelb (60°)
+      'Yellow': '#ffff00',
+      'Gold': '#ffd700',
+      'Beige': '#f5f5dc',
+      // Regenbogen - Grün (120°)
+      'Green': '#008000',
+      'Dark Green': '#006400',
+      'Lime Green': '#32cd32',
+      'Forest Green': '#228b22',
+      'Lime': '#00ff00',
+      'Olive Green': '#808000', // korrigiert für bessere Hue
+      'Apple Green': '#7cb342',
+      'Green-Brown': '#6b7d3d',
+      // Regenbogen - Cyan (180°)
+      'Cyan': '#00ffff',
+      'Turqoise': '#40e0d0',
+      'Light Cyan': '#e0ffff',
+      // Regenbogen - Blau (240°)
+      'Blue': '#0000ff',
+      'Dark Blue': '#00008b',
+      'Navy': '#000080',
+      'Light Blue': '#add8e6',
+      'Sky Blue': '#87ceeb',
+      'Ice Blue': '#b0e0e6',
       'Denim Blue': '#6e88bc',
-      'Apple Green': '#8abc54',
-      'Sky Blue': '#50bbd9',
-      'Brown': '#9b8472',
-      'Caramel': '#c78752',
-      'Desert Tan': '#dbba7f',
-      'Dark Brown': '#473822',
+      // Regenbogen - Violett/Purple (300°)
+      'Purple': '#800080',
+      'Violet': '#8b00ff',
+      'Magenta': '#ff00ff',
+      'Plum': '#dda0dd',
+      // Spezielle Farben
+      'Pink': '#ffc0cb',
+      'Sakura Pink': '#ffb7c5',
+      'Brown': '#a0522d',
+      'Dark Brown': '#3e2723',
+      'Caramel': '#c68642',
+      'Desert Tan': '#ccaa88',
+      'Metal Champaign': '#d4af37',
     };
 
     function getUrlParams() {
@@ -1633,6 +1668,14 @@
           sortedData.sort((a, b) => {
             const valA = a[sortState.key] || '';
             const valB = b[sortState.key] || '';
+            
+            // Spezialfall: Farben nach Farbton (Regenbogen) sortieren
+            if (sortState.key === 'Color' || sortState.key === 'Farbe') {
+              const hueA = getColorHue(valA);
+              const hueB = getColorHue(valB);
+              return sortState.asc ? (hueA - hueB) : (hueB - hueA);
+            }
+            
             // Zahlenvergleich, falls beide Werte Zahlen sind
             if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
               return sortState.asc ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
@@ -2031,7 +2074,16 @@
             }
           }
           return v;
-        }))].sort();
+        }))].sort((a, b) => {
+          // Für Farben/Colors nach Farbton (Regenbogen) sortieren
+          if (key === 'Farbe' || key === 'Color') {
+            const hueA = getColorHue(a);
+            const hueB = getColorHue(b);
+            return hueA - hueB;
+          }
+          // Standard: alphabetisch nach Namen
+          return String(a).localeCompare(String(b));
+        });
 
         // Alle-Checkbox
         const allCheckboxLabel = document.createElement('label');
@@ -3231,6 +3283,60 @@
       if (m && m.length >= 3) return [parseInt(m[0]), parseInt(m[1]), parseInt(m[2])];
       // Fallback: hellgrau
       return [238,238,238];
+    }
+
+    // Hilfsfunktion: Hue-Wert einer Farbe für Regenbogen-Sortierung
+    // Graustufen (Black, White, Gray, Clear, Silver) kommen am Anfang, dann Regenbogen
+    function getColorHue(colorValue) {
+      try {
+        const colorLower = String(colorValue || '').trim().toLowerCase();
+        
+        // Spezialfälle: Farbverläufe - am Anfang nach den Graustufen
+        if (colorLower === 'red-blue' || colorLower === 'redblue') {
+          return -0.6; // Zwischen Graustufen und Regenbogen
+        }
+        if (colorLower === 'rainbow') {
+          return -0.5; // Am Ende der Graustufen
+        }
+        
+        const cssColor = getCssColor(colorValue);
+        const [r, g, b] = cssColorToRgbArray(cssColor);
+        
+        // RGB zu HSL konvertieren
+        const rNorm = r / 255;
+        const gNorm = g / 255;
+        const bNorm = b / 255;
+        
+        const max = Math.max(rNorm, gNorm, bNorm);
+        const min = Math.min(rNorm, gNorm, bNorm);
+        const l = (max + min) / 2;
+        const d = max - min;
+        
+        // Graustufen: Sättigung ≈ 0 (max === min oder sehr ähnlich)
+        // Diese bekommen negative Werte, damit sie am Anfang kommen
+        // Sortiert nach Helligkeit: dunkel (schwarz) → hell (weiß)
+        if (d < 0.01) {
+          // -1.0 bis 0: Dunkel zu Hell
+          // l = 0 (schwarz) → -1.0
+          // l = 0.5 (grau) → 0
+          // l = 1 (weiß) → +1.0
+          return (l * 2) - 1;
+        }
+        
+        // Normale Farben: Hue 0-360 Grad
+        let h = 0;
+        if (max === rNorm) {
+          h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6;
+        } else if (max === gNorm) {
+          h = ((bNorm - rNorm) / d + 2) / 6;
+        } else {
+          h = ((rNorm - gNorm) / d + 4) / 6;
+        }
+        
+        return h * 360; // Rückgabe in Grad (0-360)
+      } catch (e) {
+        return 0;
+      }
     }
 
     // Safe encoder that also trims whitespace to avoid trailing %20 mismatches
