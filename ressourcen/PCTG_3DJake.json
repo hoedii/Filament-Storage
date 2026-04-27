@@ -1,0 +1,28 @@
+{
+  "name": "PCTG",
+  "product_url": "https://www.3djake.ch/de-CH/3djake/pctg-schwarz-1?sai=13329",
+  "technical_data": {
+    "Dry Out Before Use": "Highly Recommended",
+    "Dry Conditions": "65℃-75℃, 6h-12h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "240-270℃",
+    "Heated Bed Temperature": "80-100℃",
+    "Printing Speed": "30-80mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "75-85°C",
+    "Elongation at Break": "20%-30%",
+    "Properties": [
+      "- High impact resistance",
+      "- Good chemical resistance",
+      "- Low odor during printing"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 9,
+    "stiffness": 3,
+    "budgetFriendly": 6,
+    "heatResistance": 5,
+    "printability": 7
+  }
+}
+
+
