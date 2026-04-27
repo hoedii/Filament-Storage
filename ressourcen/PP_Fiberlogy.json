@@ -1,0 +1,28 @@
+{
+  "name": "PP",
+  "product_url": "https://store.anycubic.com/products/pp-filament",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "50℃, 5h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "220-250℃",
+    "Heated Bed Temperature": "90-110℃",
+    "Printing Speed": "20-60mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "51°C",
+    "Elongation at Break": "200%-600%",
+    "Properties": [
+      "- Extremely high chemical resistance",
+      "- Very flexible and fatigue-resistant",
+      "- Lightweight (low density)",
+      "- Difficult bed adhesion",
+      "- Warp-prone without proper setup"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 8,
+    "stiffness": 2,
+    "budgetFriendly": 5,
+    "heatResistance": 6,
+    "printability": 3
+  }
+}
