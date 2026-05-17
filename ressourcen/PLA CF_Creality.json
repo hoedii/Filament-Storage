@@ -1,0 +1,30 @@
+{
+  "name": "PLA CF",
+  "product_url": "https://store.creality.com/de/products/hyper-pla-carbonfaser-1-75mm-filament-1kg",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "55℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "190-230℃",
+    "Heated Bed Temperature": "45℃",
+    "Printing Speed": "50-300mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "55°C",
+    "Elongation at Break": "3.6%",
+    "Properties": [
+    "- Carbon Fiber Texture & Minimized Layer Lines",
+    "- Improved Mechanical Properties",
+    "- Electrically conductive",
+    "- Stablized Printing Dimension"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 3,
+    "stiffness": 4,
+    "budgetFriendly": 9,
+    "heatResistance": 1,
+    "printability": 9
+  }
+}
+
+
+
