@@ -6,6 +6,28 @@
   <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/hoedii/Filament-Storage/main/Logo%20Filamentlager.png">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <script>
+    (function loadQrLib(){
+      const urls = [
+        'https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js',
+        'https://unpkg.com/qrcode/build/qrcode.min.js'
+      ];
+      let idx = 0;
+      function tryLoad() {
+        if (idx >= urls.length) {
+          console.warn('QR library could not be loaded from CDNs. QR generation will fallback to placeholder.');
+          return;
+        }
+        const s = document.createElement('script');
+        s.src = urls[idx++];
+        s.async = true;
+        s.onload = () => { console.info('Loaded QR library from', s.src); };
+        s.onerror = () => { tryLoad(); };
+        document.head.appendChild(s);
+      }
+      tryLoad();
+    })();
+  </script>
   <style>
     :root {
       --primary: #0057b8;
@@ -367,6 +389,12 @@
     }
     body.dark #filamentImageModal a,
     body.dark #measurementHistoryModal a { color: #58a6ff; }
+
+    body.dark #filamentLabelModal > div {
+      background: #161b22 !important;
+      color: var(--text) !important;
+      border: 1px solid #30363d !important;
+    }
 
     /* Elegant dark mode enhancements */
     body.dark .card {
@@ -2486,8 +2514,403 @@
       }
     }
 
+    const LABEL_MM_W = 50;
+    const LABEL_MM_H = 20;
+    const LABEL_DPI = 600;
+
+    function mmToPx(mm, dpi) {
+      return Math.round((mm / 25.4) * dpi);
+    }
+
+    // Helper: draw rounded rectangle path
+    function roundRectPath(ctx, x, y, w, h, r) {
+      if (r === undefined) r = Math.min(w, h) * 0.08;
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    function getFilamentLabelData(row, json) {
+      const farbe = (row['Farbe'] || row['Color'] || '').trim();
+      const material = (row['Material'] || '').trim();
+      let name = '';
+      if (json && json.name) {
+        name = json.name + (farbe ? ' ' + farbe : '');
+      } else {
+        name = material + (farbe ? ' ' + farbe : '');
+      }
+      const td = (json && json.technical_data) ? json.technical_data : {};
+      const details = [];
+      const nozzle = td['Printing Temperature'] || td['Nozzle Temperature'] || td['Nozzle'] || '';
+      const bed = td['Heated Bed Temperature'] || td['Bed Temperature'] || td['Bed'] || '';
+      const speed = td['Printing Speed'] || td['Speed'] || '';
+      const flow = td['Flow Ratio'] || td['Flow'] || '';
+      const hdt = td['Heat Deflection Temperature (0.45MPa)'] || td['Heat Deflection Temperature'] || td['HDT'] || td['Heat Deflection'] || '';
+      // Preferential ordering: HDT, Nozzle, Speed, Bed, Flow
+      if (hdt) details.push({label: 'HDT', value: String(hdt).replace(/℃/g, '°')});
+      if (nozzle) details.push({label: 'Nozzle', value: String(nozzle).replace(/℃/g, '°')});
+      if (speed) details.push({label: 'Speed', value: String(speed).replace(/\s+/g, ' ') });
+      if (bed) details.push({label: 'Bed Temp', value: String(bed).replace(/℃/g, '°')});
+      if (flow) details.push({label: 'Flow', value: String(flow).replace(/\s+/g, ' ') });
+      const linkField = (row['URL'] || row['Url'] || row['Link'] || row['link'] || row['Website'] || row['website'] || row['Produktlink'] || row['Product URL'] || row['Produkt URL'] || '').trim();
+      const spoolId = (row['Spool ID'] || row['ID'] || row['SpoolID'] || row['Spool'] || row['id'] || '').toString().trim();
+      let fallbackUrl = window.location.href;
+      if (window.location.protocol === 'file:') {
+        fallbackUrl = 'https://example.com/?spool=' + encodeURIComponent(spoolId || 'unknown');
+      } else if (spoolId) {
+        fallbackUrl = window.location.origin + window.location.pathname + '?spool=' + encodeURIComponent(spoolId);
+      }
+      let rawUrl = (json && json.product_url) ? String(json.product_url).trim() : linkField;
+      // normalize rawUrl: if it looks like a domain/path without protocol, prepend https://
+      if (rawUrl && !/^https?:\/\//i.test(rawUrl)) {
+        if (/^[\w\-]+\.[\w\-]+/.test(rawUrl)) rawUrl = 'https://' + rawUrl;
+      }
+      const productUrl = rawUrl || fallbackUrl;
+      return {
+        name: name.trim() || '—',
+        number: (row['Spool ID'] || row['ID'] || '').toString().trim() || '—',
+        manufacturer: (row['Hersteller'] || row['Manufacturer'] || '').trim() || '—',
+        color: farbe || '—',
+        printDetails: details,
+        productUrl: productUrl
+      };
+    }
+
+    function fitCanvasText(ctx, text, maxWidth, fontWeight, startPx, minPx) {
+      const family = 'Arial, Helvetica, sans-serif';
+      let size = startPx;
+      while (size >= minPx) {
+        ctx.font = `${fontWeight} ${size}px ${family}`;
+        if (ctx.measureText(text).width <= maxWidth) return { text, size };
+        size -= 1;
+      }
+      ctx.font = `${fontWeight} ${minPx}px ${family}`;
+      let t = text;
+      while (t.length > 1 && ctx.measureText(t + '…').width > maxWidth) t = t.slice(0, -1);
+      return { text: t + (t.length < text.length ? '…' : ''), size: minPx };
+    }
+
+    async function drawLabelQr(ctx, x, y, sizePx, url) {
+      // Draw the QR background with a subtle rounded panel for a modern look
+      const outerInset = Math.max(8, Math.round(sizePx * 0.05));
+      const outerRadius = Math.max(10, Math.round(sizePx * 0.08));
+      ctx.save();
+      ctx.fillStyle = '#ffffff';
+      roundRectPath(ctx, x - outerInset / 2, y - outerInset / 2, sizePx + outerInset, sizePx + outerInset, outerRadius);
+      ctx.fill();
+      ctx.restore();
+
+      try {
+        const qrMargin = Math.max(10, Math.round(sizePx * 0.06));
+        const qrInnerSize = sizePx - qrMargin * 2;
+        const qrInnerX = x + qrMargin;
+        const qrInnerY = y + qrMargin;
+
+        if (!url) {
+          // No URL: draw clear placeholder
+          ctx.save();
+          ctx.fillStyle = '#000000';
+          roundRectPath(ctx, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize, Math.max(4, Math.round(qrInnerSize * 0.06)));
+          ctx.fill();
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `${Math.max(8, Math.round(qrInnerSize * 0.12))}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('No URL', qrInnerX + qrInnerSize / 2, qrInnerY + qrInnerSize / 2);
+          ctx.restore();
+          return;
+        }
+
+        if (typeof QRCode === 'undefined' || !QRCode.toCanvas) {
+        // QR library unavailable: draw simple placeholder without a border
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        roundRectPath(ctx, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize, Math.max(4, Math.round(qrInnerSize * 0.06)));
+        ctx.fill();
+          return;
+        }
+
+        // Generate QR on an offscreen canvas with an internal margin
+        const qr = document.createElement('canvas');
+        await QRCode.toCanvas(qr, url, {
+          width: qrInnerSize,
+          margin: 0,
+          errorCorrectionLevel: 'M',
+          color: { dark: '#000000', light: '#ffffff' }
+        });
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(qr, Math.round(qrInnerX), Math.round(qrInnerY), qrInnerSize, qrInnerSize);
+      } catch (e) {
+        console.warn('QR generation failed, drawing fallback placeholder', e);
+        ctx.save();
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(Math.round(x), Math.round(y), sizePx, sizePx);
+        ctx.strokeStyle = '#000000';
+        ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, sizePx - 1, sizePx - 1);
+        ctx.restore();
+      }
+    }
+
+    async function renderFilamentLabelCanvas(labelData) {
+      const w = mmToPx(LABEL_MM_W, LABEL_DPI);
+      const h = mmToPx(LABEL_MM_H, LABEL_DPI);
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      const pad = mmToPx(0.9, LABEL_DPI);
+      const qrSize = h - pad * 2;
+      const qrX = w - pad - qrSize;
+      const qrY = pad;
+      const textX = pad;
+      const textW = qrX - pad - mmToPx(0.8, LABEL_DPI);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = Math.max(2, mmToPx(0.12, LABEL_DPI));
+      ctx.strokeRect(0.5, 0.5, w - 1, h - 1);
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#000000';
+
+      // QR area right
+      await drawLabelQr(ctx, qrX, qrY, qrSize, labelData.productUrl);
+      ctx.lineWidth = Math.max(2, mmToPx(0.08, LABEL_DPI));
+      ctx.strokeRect(qrX + 0.5, qrY + 0.5, qrSize - 1, qrSize - 1);
+      // no extra scan text — QR area is self explanatory
+
+      // removed: top-right ID box (moved to ID bar below)
+
+      // Header block for material and color (rounded corners)
+      ctx.fillStyle = '#000000';
+      const nameBoxH = mmToPx(3.8, LABEL_DPI);
+      const headerPadding = mmToPx(0.25, LABEL_DPI);
+      roundRectPath(ctx, textX, qrY, textW, nameBoxH, mmToPx(0.6, LABEL_DPI));
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      const mainName = labelData.name || '—';
+      const mainNameFit = fitCanvasText(ctx, mainName, textW - headerPadding * 2, 'bold', mmToPx(1.9, LABEL_DPI), mmToPx(1.4, LABEL_DPI));
+      ctx.font = `bold ${mainNameFit.size}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(mainNameFit.text, textX + textW / 2, qrY + nameBoxH / 2);
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'top';
+
+      // Secondary detail below header: manufacturer only (color already in header)
+      const manufacturerText = labelData.manufacturer || '—';
+      ctx.fillStyle = '#000000';
+      ctx.font = `bold ${mmToPx(1.3, LABEL_DPI)}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+      const manufacturerY = qrY + nameBoxH + mmToPx(0.6, LABEL_DPI);
+      ctx.fillText(manufacturerText, textX + headerPadding, manufacturerY);
+
+      // Print parameters list
+      const lineHeight = mmToPx(2.1, LABEL_DPI);
+      const paramsY = manufacturerY + mmToPx(2.2, LABEL_DPI);
+      const idBarH = mmToPx(2.4, LABEL_DPI);
+      const idBarY = h - pad - idBarH;
+      const availableHeight = idBarY - paramsY - mmToPx(0.3, LABEL_DPI);
+      const maxDetails = Math.max(0, Math.floor(availableHeight / lineHeight));
+      const detailsToShow = labelData.printDetails.slice(0, maxDetails);
+      detailsToShow.forEach((detail, index) => {
+        const y = paramsY + index * lineHeight;
+        ctx.font = `bold ${mmToPx(1.1, LABEL_DPI)}px Arial`;
+        ctx.fillText(detail.label + ':', textX + mmToPx(0.3, LABEL_DPI), y);
+        ctx.font = `${mmToPx(1.1, LABEL_DPI)}px Arial`;
+        ctx.fillText(detail.value, textX + mmToPx(10.2, LABEL_DPI), y);
+      });
+      if (labelData.printDetails.length > detailsToShow.length) {
+        const overflowY = paramsY + detailsToShow.length * lineHeight;
+        ctx.font = `bold ${mmToPx(1.1, LABEL_DPI)}px Arial`;
+        ctx.fillText('...', textX + mmToPx(0.3, LABEL_DPI), overflowY);
+      }
+
+      // ID bar at the bottom of the left text area (always visible)
+      ctx.fillStyle = '#000000';
+      roundRectPath(ctx, textX + mmToPx(0.2, LABEL_DPI), idBarY, textW - mmToPx(0.4, LABEL_DPI), idBarH, mmToPx(0.5, LABEL_DPI));
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `bold ${mmToPx(1.6, LABEL_DPI)}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+      const idTextBar = labelData.number || '—';
+      const idTextBarW = ctx.measureText(idTextBar).width;
+      const idXCenter = textX + Math.round((textW - idTextBarW) / 2);
+      ctx.textBaseline = 'middle';
+      ctx.fillText(idTextBar, idXCenter, idBarY + idBarH / 2);
+      ctx.textBaseline = 'top';
+
+      // Optional bottom dashed row if no details
+      if (labelData.printDetails.length === 0) {
+        ctx.strokeStyle = '#000000';
+        ctx.setLineDash([mmToPx(0.5, LABEL_DPI), mmToPx(0.5, LABEL_DPI)]);
+        ctx.beginPath();
+        ctx.moveTo(textX + mmToPx(0.3, LABEL_DPI), idBarY - mmToPx(0.6, LABEL_DPI));
+        ctx.lineTo(textX + textW - mmToPx(0.3, LABEL_DPI), idBarY - mmToPx(0.6, LABEL_DPI));
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+
+      return canvas;
+    }
+
+    function labelCanvasToPreviewImg(canvas) {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.alt = 'Etikett Vorschau';
+      img.style.width = 'min(100%, 500px)';
+      img.style.height = 'auto';
+      img.style.imageRendering = 'pixelated';
+      img.style.border = '1px solid #c8d6ea';
+      img.style.borderRadius = '12px';
+      img.style.boxShadow = '0 12px 30px rgba(0,0,0,0.08)';
+      img.style.display = 'block';
+      img.style.margin = '0 auto';
+      return img;
+    }
+
+    async function downloadFilamentLabelPdf(labelData) {
+      const canvas = await renderFilamentLabelCanvas(labelData);
+      const safeName = (labelData.number || 'label').replace(/[^\w\-]+/g, '_');
+      const pdfLib = window.jspdf || window.jspdf || {};
+      const jsPDF = pdfLib.jsPDF;
+      if (!jsPDF) {
+        console.error('jsPDF not available for PDF export');
+        const link = document.createElement('a');
+        link.download = `filament-etikett_${safeName}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        return;
+      }
+      const doc = new jsPDF({ unit: 'mm', orientation: 'landscape', format: [LABEL_MM_W, LABEL_MM_H] });
+      const imageData = canvas.toDataURL('image/png');
+      doc.addImage(imageData, 'PNG', 0, 0, LABEL_MM_W, LABEL_MM_H);
+      doc.save(`filament-etikett_${safeName}.pdf`);
+    }
+
+    function appendFilamentLabelButton(titleDiv, row, json) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px;margin-right:6px"><path d="M5 7H19V17H5V7Z" stroke="currentColor" stroke-width="2"/><path d="M9 11H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 7L9 3H15L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Etikett erstellen`;
+      btn.style.marginTop = '14px';
+      btn.style.padding = '9px 18px';
+      btn.style.background = '#0057b8';
+      btn.style.color = '#fff';
+      btn.style.border = 'none';
+      btn.style.borderRadius = '7px';
+      btn.style.fontSize = '0.95rem';
+      btn.style.fontWeight = '600';
+      btn.style.cursor = 'pointer';
+      btn.style.display = 'inline-flex';
+      btn.style.alignItems = 'center';
+      btn.style.transition = 'background 0.2s';
+      btn.onmouseover = () => { btn.style.background = '#003e87'; };
+      btn.onmouseout = () => { btn.style.background = '#0057b8'; };
+      btn.onclick = async (e) => {
+        e.stopPropagation();
+        if (json) return openFilamentLabelModal(row, json);
+        // try to fetch settings JSON based on material + manufacturer
+        const material = (row['Material'] || '').trim();
+        const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').trim();
+        const safeEnc = (s) => String(s || '').replace(/[^a-zA-Z0-9-_]/g, '_');
+        const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${safeEnc(material)}_${safeEnc(hersteller)}.json`;
+        try {
+          const res = await fetch(settingsUrl, { cache: 'no-store' });
+          if (res.ok) {
+            const fetched = await res.json();
+            return openFilamentLabelModal(row, fetched);
+          }
+        } catch (e) {
+          console.warn('Could not fetch settings JSON for label:', e);
+        }
+        // fallback: open without json
+        openFilamentLabelModal(row, null);
+      };
+      titleDiv.appendChild(btn);
+    }
+
+    async function openFilamentLabelModal(row, json) {
+      const labelData = getFilamentLabelData(row, json);
+      let existing = document.getElementById('filamentLabelModal');
+      if (existing) existing.remove();
+
+      const modal = document.createElement('div');
+      modal.id = 'filamentLabelModal';
+      modal.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55);z-index:10002;display:flex;align-items:center;justify-content:center;padding:16px;';
+      modal.onclick = () => modal.remove();
+
+      const inner = document.createElement('div');
+      inner.style.cssText = 'background:#fff;padding:24px 26px 26px 26px;border-radius:20px;box-shadow:0 18px 50px rgba(0,0,0,0.22);max-width:760px;width:min(100%,760px);text-align:left;position:relative;';
+      inner.onclick = (e) => e.stopPropagation();
+
+      const headerRow = document.createElement('div');
+      headerRow.style.cssText = 'display:flex;align-items:flex-start;justify-content:flex-start;gap:18px;margin-bottom:18px;position:relative;';
+
+      const textBlock = document.createElement('div');
+      const title = document.createElement('h3');
+      title.textContent = 'Filament-Etikett (50 × 20 mm)';
+      title.style.margin = '0 0 8px 0';
+      title.style.fontSize = '1.35rem';
+      title.style.color = '#003e87';
+
+      const subtitle = document.createElement('p');
+      subtitle.textContent = `${labelData.name} · Nr. ${labelData.number} · ${labelData.manufacturer}`;
+      subtitle.style.margin = '0';
+      subtitle.style.fontSize = '0.95rem';
+      subtitle.style.color = '#4d5f79';
+      subtitle.style.lineHeight = '1.5';
+
+      textBlock.appendChild(title);
+      textBlock.appendChild(subtitle);
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = 'Print PDF';
+      saveBtn.disabled = true;
+      saveBtn.style.cssText = 'padding:11px 22px;background:#0057b8;color:#fff;border:none;border-radius:10px;font-size:0.97rem;font-weight:700;cursor:pointer;box-shadow:0 10px 20px rgba(0,87,184,0.18);transition:background 0.18s ease;';
+      saveBtn.onmouseover = () => { if (!saveBtn.disabled) saveBtn.style.background = '#003e87'; };
+      saveBtn.onmouseout = () => { saveBtn.style.background = '#0057b8'; };
+
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Schließen';
+      closeBtn.style.cssText = 'margin-left:auto;padding:10px 18px;background:#f5f7fb;color:#34495e;border:1px solid #d6e0ef;border-radius:10px;font-size:0.95rem;cursor:pointer;';
+      closeBtn.onclick = () => modal.remove();
+
+      headerRow.appendChild(textBlock);
+      headerRow.appendChild(closeBtn);
+
+      const previewWrap = document.createElement('div');
+      previewWrap.style.cssText = 'display:flex;align-items:center;justify-content:center;background:#f3f8ff;border:1px solid #dce9f8;border-radius:18px;padding:20px;min-height:200px;margin-bottom:14px;';
+      const loading = document.createElement('p');
+      loading.textContent = 'Etikett wird gerendert…';
+      loading.style.color = '#6b7a95';
+      previewWrap.appendChild(loading);
+
+      inner.appendChild(headerRow);
+      inner.appendChild(previewWrap);
+
+      const bottomActions = document.createElement('div');
+      bottomActions.style.cssText = 'display:flex;justify-content:center;gap:12px;margin-top:14px;';
+      bottomActions.appendChild(saveBtn);
+      inner.appendChild(bottomActions);
+
+      modal.appendChild(inner);
+      document.body.appendChild(modal);
+
+      try {
+        const labelCanvas = await renderFilamentLabelCanvas(labelData);
+        previewWrap.innerHTML = '';
+        previewWrap.appendChild(labelCanvasToPreviewImg(labelCanvas));
+        saveBtn.disabled = false;
+        saveBtn.onclick = () => downloadFilamentLabelPdf(labelData);
+      } catch (err) {
+        previewWrap.innerHTML = '<p style="color:#b30000">Fehler beim Rendern des Etiketts.</p>';
+        console.error(err);
+      }
+    }
+
     function showFilamentImage(row) {
-      // Spool IDs mit gleichem Material, Hersteller, Farbe suchen
       const material = (row['Material'] || '').trim();
       const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').trim();
       const farbe = (row['Farbe'] || row['Color'] || '').trim();
@@ -2570,6 +2993,7 @@
           inner.style.display = 'flex';
           inner.style.flexDirection = 'column';
           inner.style.alignItems = 'stretch';
+          inner.style.position = 'relative';
           inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
           inner.onclick = (e) => e.stopPropagation();
           // Titel
@@ -2670,6 +3094,12 @@
             titleDiv.appendChild(nameDiv);
             titleDiv.appendChild(herstellerDiv);
           }
+          const popupButtonWrapper = document.createElement('div');
+          popupButtonWrapper.style.cssText = 'position:absolute;top:18px;right:18px;z-index:10;';
+          inner.appendChild(popupButtonWrapper);
+          appendFilamentLabelButton(popupButtonWrapper, row, json);
+          const popupLabelButton = popupButtonWrapper.querySelector('button');
+          if (popupLabelButton) popupLabelButton.style.marginTop = '0';
           // Infos-Wrapper
           const infoCol = document.createElement('div');
           infoCol.style.display = 'flex';
@@ -3061,6 +3491,7 @@
             titleDiv.appendChild(nameDiv);
             titleDiv.appendChild(herstellerDiv);
           }
+          appendFilamentLabelButton(titleDiv, row, null);
           // Layout-Wrapper for image and data
           const contentRow = document.createElement('div');
           contentRow.style.display = 'flex';
@@ -3072,7 +3503,6 @@
           contentRow.style.minWidth = '0';
           contentRow.style.flexWrap = 'wrap';
           contentRow.style.flex = '1';
-          // Image and product link column
           const imageCol = document.createElement('div');
           imageCol.style.display = 'flex';
           imageCol.style.flexDirection = 'column';
@@ -3080,7 +3510,6 @@
           imageCol.style.justifyContent = 'flex-start';
           imageCol.appendChild(img);
           imageCol.appendChild(errorMsg);
-          // Product link below image, left-aligned
           if (row.product_url) {
             const link = document.createElement('a');
             link.href = row.product_url;
@@ -3101,7 +3530,6 @@
             link.style.alignSelf = 'center';
             link.onmouseover = () => { link.style.background = '#003e87'; };
             link.onmouseout = () => { link.style.background = '#0057b8'; };
-            // Link icon (SVG)
             const icon = document.createElement('span');
             icon.innerHTML = `<svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>`;
             link.textContent = 'Product link';
@@ -3596,6 +4024,18 @@
         controller.abort();
         if (showLoader) document.getElementById('loaderText').textContent = 'Timeout while loading data from Google Sheets!';
       }, 12000);
+      // Watchdog: ensure loader doesn't stay forever in case of unexpected hang
+      const watchdog = setTimeout(() => {
+        try {
+          const loader = document.getElementById('loader');
+          const loaderText = document.getElementById('loaderText');
+          if (loader && loader.style.display !== 'none') {
+            loader.style.display = 'none';
+            if (loaderText) loaderText.textContent = 'Unable to load data — check console for errors.';
+            console.warn('loadData watchdog hidden the loader after 15s');
+          }
+        } catch (e) {}
+      }, 15000);
       fetch(sheetUrl, { signal: controller.signal, cache: 'no-store' })
         .then(res => res.json())
         .then(responseData => {
@@ -3634,13 +4074,13 @@
           }
           
           // Ensure laser parameters are loaded BEFORE rendering the table
-          Promise.resolve(loadLaserParameters()).then(() => {
+          return Promise.resolve(loadLaserParameters()).then(() => {
             renderTable(data);
             applyUrlFiltersAndLock();
             applyFilters();
             // Notify listeners (e.g., live search) that data changed
             window.dispatchEvent(new Event('data-reloaded'));
-            const keys = Object.keys(data[0]);
+            const keys = Object.keys(data[0] || {});
             if (keys.length > 0) {
               filters[keys[0]] = data[0][keys[0]];
               applyFilters();
@@ -3653,21 +4093,16 @@
             // Nach jedem Laden der Daten: Link-Manager-Modal schließen
             const linkManagerModal = document.getElementById('linkManagerModal');
             if (linkManagerModal) linkManagerModal.style.display = 'none';
-          })
-          .then(() => {
-            // hide loader after rendering finished
-            if (showLoader) {
-              setTimeout(() => {
-                try { document.getElementById('loader').style.display = 'none'; } catch (e) {}
-              }, 500);
-            }
           });
           
+        })
+        .then(() => {
           // In restricted link mode, load allowed spool IDs once
           ensureAllowedSpoolIdsLoaded();
         })
         .catch((err) => {
           clearTimeout(timeout);
+          clearTimeout(watchdog);
           if (showLoader) {
             if (err.name === 'AbortError') {
               document.getElementById('loaderText').textContent = 'Timeout while loading data from Google Sheets!';
@@ -3679,6 +4114,16 @@
               try { document.getElementById('loader').style.display = 'none'; } catch (e) {}
             }, 1400);
           }
+        })
+        .finally(() => {
+          // ensure loader is hidden in any case
+          if (showLoader) {
+            setTimeout(() => {
+              try { document.getElementById('loader').style.display = 'none'; } catch (e) {}
+            }, 600);
+          }
+          clearTimeout(timeout);
+          clearTimeout(watchdog);
         });
 
       // NOTE: hide loader only after laser parameters loaded and table rendered
@@ -5574,7 +6019,7 @@
           }
         });
         // Für dynamisch erzeugte Modals (filamentImageModal, linkCodePopup, spoolIdsPopup): ggf. entfernen
-        ['filamentImageModal','linkCodePopup','spoolIdsPopup','measurementHistoryModal'].forEach(id => {
+        ['filamentImageModal','filamentLabelModal','linkCodePopup','spoolIdsPopup','measurementHistoryModal'].forEach(id => {
           const el = document.getElementById(id);
           if (el && el.parentNode) {
             el.parentNode.removeChild(el);
