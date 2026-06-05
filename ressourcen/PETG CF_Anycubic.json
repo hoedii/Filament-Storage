@@ -1,0 +1,29 @@
+{
+  "name": "PETG CF",
+  "product_url": "https://store.anycubic.com/products/petg-cf-filament?variant=46675710050466",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "60℃-65℃, 6h-8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "240-270℃",
+    "Heated Bed Temperature": "65-70℃",
+    "Printing Speed": "40-250mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "67°C",
+    "Elongation at Break": "12 ± 1%",
+    "Properties": [
+    "- Satin Carbon Fiber Texture",
+    "- Durable & Impact-Resistant",
+    "- Water- & Weather-Resist"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 6,
+    "stiffness": 3,
+    "budgetFriendly": 9,
+    "heatResistance": 2,
+    "printability": 9
+  }
+}
+
+
+
