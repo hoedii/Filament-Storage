@@ -1026,7 +1026,7 @@
           results.push({ row, score });
         }
         results.sort((a,b) => b.score - a.score);
-        return results.slice(0, 20).map(r => r.row);
+        return results.slice(0, 100).map(r => r.row);
       }
 
       function renderDropdown(items) {
@@ -1074,17 +1074,51 @@
             }
           }
           
-          // Build meta text with manufacturer and weight
-          const metaParts = [];
+          // Build meta with manufacturer and weight (simple text display)
+          meta.innerHTML = '';
+          
           if (row['Hersteller'] || row['Manufacturer']) {
-            metaParts.push(String(row['Hersteller'] || row['Manufacturer']).trim());
+            const mfr = document.createElement('span');
+            mfr.textContent = String(row['Hersteller'] || row['Manufacturer']).trim();
+            meta.appendChild(mfr);
           }
-          if (weight) {
-            // Add weight, ensuring it ends with 'g' if it doesn't already
+          
+          const isOrdered = String(row['ordered'] || row['Ordered'] || '').trim().toLowerCase() === 'x';
+          const hasNoWeight = !weight || weight === '0' || weight === '0.0' || parseFloat(weight) === 0;
+          
+          if (weight && !hasNoWeight) {
+            const separator = document.createElement('span');
+            separator.textContent = ' · ';
+            meta.appendChild(separator);
+            
             const weightText = /g\s*$/.test(weight) ? weight : weight + ' g';
-            metaParts.push(weightText);
+            meta.appendChild(document.createTextNode(weightText));
+          } else if (isOrdered) {
+            const separator = document.createElement('span');
+            separator.textContent = ' · ';
+            meta.appendChild(separator);
+            
+            const orderedSpan = document.createElement('span');
+            orderedSpan.textContent = 'ordered';
+            orderedSpan.style.color = '#111';
+            orderedSpan.style.fontWeight = 'normal';
+            orderedSpan.style.fontSize = '0.75rem';
+            orderedSpan.style.opacity = '0.9';
+            meta.appendChild(orderedSpan);
+          } else if (hasNoWeight) {
+            const separator = document.createElement('span');
+            separator.textContent = ' · ';
+            meta.appendChild(separator);
+            
+            const emptySpan = document.createElement('span');
+            emptySpan.textContent = 'empty';
+            emptySpan.style.color = '#cc6666';
+            emptySpan.style.fontWeight = 'normal';
+            emptySpan.style.fontSize = '0.75rem';
+            emptySpan.style.opacity = '0.7';
+            meta.appendChild(emptySpan);
           }
-          meta.textContent = metaParts.join(' · ');
+          
           opt.appendChild(meta);
 
           opt.onclick = (e) => {
@@ -1251,6 +1285,7 @@
       'Pink': '#ffc0cb',
       'Peach Pink': '#FFC196',
       'Sakura Pink': '#ffb7c5',
+      'Bone White': '#EFEDE3',
       'Brown': '#927968',
       'Dark Brown': '#3e2723',
       'Caramel': '#c68642',
@@ -1710,7 +1745,7 @@
       tbody.innerHTML = '';
 
       // Kopfzeile immer anzeigen, auch wenn keine Daten
-      const keys = Object.keys(originalData[0] || {});
+      const keys = Object.keys(originalData[0] || {}).filter(k => k.toLowerCase() !== 'ordered');
       const headRow = document.createElement('tr');
       keys.forEach(k => {
         const th = document.createElement('th');
@@ -1805,40 +1840,82 @@
               td.innerHTML = '✔️';
             } else if (!isNaN(row[key]) && row[key] !== '') {
               td.classList.add('numeric');
-              // Spezialfall: Remaining (g) farbiges Kästchen
+              // Spezialfall: Remaining (g) mit modernem Balken-Design
               if (key === 'Remaining (g)') {
                 const val = parseFloat(row[key]);
-                const box = document.createElement('span');
-                box.textContent = val.toFixed(1) + ' g';
-                box.style.display = 'inline-block';
-                box.style.minWidth = '64px';
-                box.style.textAlign = 'center';
-                box.style.padding = '4px 10px';
-                box.style.borderRadius = '7px';
-                box.style.fontWeight = 'bold';
-                if (val === 0) {
-                  box.style.background = 'none';
-                  box.style.color = '#888';
-                } else if (val >= 1000) {
-                  box.style.background = '#e0e0e0';
-                  box.style.color = '#333';
+                const isUnused = val === 1000;
+                
+                // Container
+                const container = document.createElement('div');
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '8px';
+                container.style.alignItems = 'center';
+                container.style.width = '100%';
+                container.style.opacity = isUnused ? '0.5' : '1';
+                
+                // Text oben (Grammatur) - modern und clean
+                const textDiv = document.createElement('div');
+                textDiv.style.fontSize = '0.9rem';
+                textDiv.style.fontWeight = '700';
+                textDiv.style.letterSpacing = '-0.3px';
+                textDiv.style.color = isUnused ? '#bbb' : '#333';
+                const isOrdered = String(row['ordered'] || '').trim().toLowerCase() === 'x';
+                if (isOrdered && val === 0) {
+                  textDiv.textContent = 'ordered';
+                  textDiv.style.color = '#111';
                 } else {
-                  // Farbverlauf: 1000g = grün, 500g = gelb, 0g = rot
-                  // Interpolieren zwischen grün (#4caf50), gelb (#ffeb3b), rot (#f44336)
-                  let color;
-                  if (val > 500) {
-                    // Grün zu Gelb
-                    const t = (val - 500) / 500; // 1 bei 1000, 0 bei 500
-                    color = interpolateColor('#ffeb3b', '#4caf50', t);
-                  } else {
-                    // Gelb zu Rot
-                    const t = val / 500; // 1 bei 500, 0 bei 0
-                    color = interpolateColor('#f44336', '#ffeb3b', t);
-                  }
-                  box.style.background = color;
-                  box.style.color = '#222';
+                  textDiv.textContent = val.toFixed(1) + ' g';
                 }
-                td.appendChild(box);
+                container.appendChild(textDiv);
+                
+                // Balken-Container (modernes Design)
+                const barContainer = document.createElement('div');
+                barContainer.style.width = '100%';
+                barContainer.style.height = '8px';
+                barContainer.style.background = 'rgba(0, 0, 0, 0.08)';
+                barContainer.style.borderRadius = '4px';
+                barContainer.style.overflow = 'hidden';
+                barContainer.style.boxShadow = 'inset 0 1px 2px rgba(0, 0, 0, 0.05)';
+                
+                // Gefüllter Balken
+                const barFill = document.createElement('div');
+                barFill.style.height = '100%';
+                barFill.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+                barFill.style.borderRadius = '4px';
+                
+                // Breite basierend auf 1000g Maximum
+                const percentage = Math.min((val / 1000) * 100, 100);
+                barFill.style.width = percentage + '%';
+                
+                // Modernes Farbschema mit Gradient
+                if (isUnused) {
+                  // Dunkelgrün für ungebraucht (aber ausgegraut wirkend)
+                  barFill.style.background = '#2e7d32';
+                } else if (val === 0) {
+                  barFill.style.background = 'transparent';
+                } else if (val >= 900) {
+                  barFill.style.background = 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)';
+                } else if (val >= 600) {
+                  // Grün-Gelb Zone
+                  const t = (val - 600) / 300;
+                  barFill.style.background = interpolateColor('#ffeb3b', '#81c784', t);
+                } else if (val >= 300) {
+                  // Gelb-Orange Zone
+                  const t = (val - 300) / 300;
+                  barFill.style.background = interpolateColor('#ff9800', '#ffeb3b', t);
+                } else {
+                  // Rot Zone
+                  const t = val / 300;
+                  barFill.style.background = interpolateColor('#ef5350', '#ff9800', t);
+                }
+                
+                barFill.style.boxShadow = percentage > 10 ? '0 0 4px rgba(0, 0, 0, 0.1)' : 'none';
+                
+                barContainer.appendChild(barFill);
+                container.appendChild(barContainer);
+                
+                td.appendChild(container);
               } else {
                 td.textContent = parseFloat(row[key]).toFixed(1) + ' g';
               }
