@@ -7,26 +7,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
   <script>
-    (function loadQrLib(){
-      const urls = [
-        'https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js',
-        'https://unpkg.com/qrcode/build/qrcode.min.js'
-      ];
-      let idx = 0;
-      function tryLoad() {
-        if (idx >= urls.length) {
-          console.warn('QR library could not be loaded from CDNs. QR generation will fallback to placeholder.');
-          return;
-        }
-        const s = document.createElement('script');
-        s.src = urls[idx++];
-        s.async = true;
-        s.onload = () => { console.info('Loaded QR library from', s.src); };
-        s.onerror = () => { tryLoad(); };
-        document.head.appendChild(s);
-      }
-      tryLoad();
-    })();
+    // QR library loading removed - no longer needed
   </script>
   <style>
     :root {
@@ -2746,64 +2727,7 @@
     }
 
     async function drawLabelQr(ctx, x, y, sizePx, url) {
-      // Draw the QR background with a subtle rounded panel for a modern look
-      const outerInset = Math.max(8, Math.round(sizePx * 0.05));
-      const outerRadius = Math.max(10, Math.round(sizePx * 0.08));
-      ctx.save();
-      ctx.fillStyle = '#ffffff';
-      roundRectPath(ctx, x - outerInset / 2, y - outerInset / 2, sizePx + outerInset, sizePx + outerInset, outerRadius);
-      ctx.fill();
-      ctx.restore();
-
-      try {
-        const qrMargin = Math.max(10, Math.round(sizePx * 0.06));
-        const qrInnerSize = sizePx - qrMargin * 2;
-        const qrInnerX = x + qrMargin;
-        const qrInnerY = y + qrMargin;
-
-        if (!url) {
-          // No URL: draw clear placeholder
-          ctx.save();
-          ctx.fillStyle = '#000000';
-          roundRectPath(ctx, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize, Math.max(4, Math.round(qrInnerSize * 0.06)));
-          ctx.fill();
-          ctx.fillStyle = '#ffffff';
-          ctx.font = `${Math.max(8, Math.round(qrInnerSize * 0.12))}px Arial`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('No URL', qrInnerX + qrInnerSize / 2, qrInnerY + qrInnerSize / 2);
-          ctx.restore();
-          return;
-        }
-
-        if (typeof QRCode === 'undefined' || !QRCode.toCanvas) {
-        // QR library unavailable: draw simple placeholder without a border
-        ctx.save();
-        ctx.fillStyle = '#ffffff';
-        roundRectPath(ctx, qrInnerX, qrInnerY, qrInnerSize, qrInnerSize, Math.max(4, Math.round(qrInnerSize * 0.06)));
-        ctx.fill();
-          return;
-        }
-
-        // Generate QR on an offscreen canvas with an internal margin
-        const qr = document.createElement('canvas');
-        await QRCode.toCanvas(qr, url, {
-          width: qrInnerSize,
-          margin: 0,
-          errorCorrectionLevel: 'M',
-          color: { dark: '#000000', light: '#ffffff' }
-        });
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(qr, Math.round(qrInnerX), Math.round(qrInnerY), qrInnerSize, qrInnerSize);
-      } catch (e) {
-        console.warn('QR generation failed, drawing fallback placeholder', e);
-        ctx.save();
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(Math.round(x), Math.round(y), sizePx, sizePx);
-        ctx.strokeStyle = '#000000';
-        ctx.strokeRect(Math.round(x) + 0.5, Math.round(y) + 0.5, sizePx - 1, sizePx - 1);
-        ctx.restore();
-      }
+      // QR code drawing removed - no longer used in new label design
     }
 
     async function renderFilamentLabelCanvas(labelData) {
@@ -2813,12 +2737,7 @@
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext('2d');
-      const pad = mmToPx(0.9, LABEL_DPI);
-      const qrSize = h - pad * 2;
-      const qrX = w - pad - qrSize;
-      const qrY = pad;
-      const textX = pad;
-      const textW = qrX - pad - mmToPx(0.8, LABEL_DPI);
+      const pad = mmToPx(1.2, LABEL_DPI);
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, w, h);
@@ -2828,80 +2747,45 @@
       ctx.textBaseline = 'top';
       ctx.fillStyle = '#000000';
 
-      // QR area right
-      await drawLabelQr(ctx, qrX, qrY, qrSize, labelData.productUrl);
-      ctx.lineWidth = Math.max(2, mmToPx(0.08, LABEL_DPI));
-      ctx.strokeRect(qrX + 0.5, qrY + 0.5, qrSize - 1, qrSize - 1);
-      // no extra scan text — QR area is self explanatory
+      // Large number box with black background (centered and prominent)
+      const numberBoxH = mmToPx(7.2, LABEL_DPI);
+      const numberBoxW = w - pad * 2;
+      const numberBoxX = pad;
+      const numberBoxY = pad;
 
-      // removed: top-right ID box (moved to ID bar below)
-
-      // Header block for material and color (rounded corners)
+      // Black background for number
       ctx.fillStyle = '#000000';
-      const nameBoxH = mmToPx(3.8, LABEL_DPI);
-      const headerPadding = mmToPx(0.25, LABEL_DPI);
-      roundRectPath(ctx, textX, qrY, textW, nameBoxH, mmToPx(0.6, LABEL_DPI));
+      roundRectPath(ctx, numberBoxX, numberBoxY, numberBoxW, numberBoxH, mmToPx(0.8, LABEL_DPI));
       ctx.fill();
+
+      // Large white number text
       ctx.fillStyle = '#ffffff';
-      const mainName = labelData.name || '—';
-      const mainNameFit = fitCanvasText(ctx, mainName, textW - headerPadding * 2, 'bold', mmToPx(1.9, LABEL_DPI), mmToPx(1.4, LABEL_DPI));
-      ctx.font = `bold ${mainNameFit.size}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+      const numberText = labelData.number || '—';
+      const numberFit = fitCanvasText(ctx, numberText, numberBoxW - mmToPx(0.8, LABEL_DPI), 'bold', mmToPx(5.0, LABEL_DPI), mmToPx(4.0, LABEL_DPI));
+      ctx.font = `bold ${numberFit.size}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(mainNameFit.text, textX + textW / 2, qrY + nameBoxH / 2);
+      ctx.fillText(numberFit.text, numberBoxX + numberBoxW / 2, numberBoxY + numberBoxH / 2);
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
 
-      // Secondary detail below header: manufacturer only (color already in header)
-      const manufacturerText = labelData.manufacturer || '—';
+      // Material and color below the number box - use remaining space
+      const infoStartY = numberBoxY + numberBoxH + mmToPx(0.6, LABEL_DPI);
+      const remainingHeight = h - infoStartY - pad;
       ctx.fillStyle = '#000000';
-      ctx.font = `bold ${mmToPx(1.3, LABEL_DPI)}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
-      const manufacturerY = qrY + nameBoxH + mmToPx(0.6, LABEL_DPI);
-      ctx.fillText(manufacturerText, textX + headerPadding, manufacturerY);
+      
+      // Material line - larger font
+      const materialText = labelData.name || '—';
+      const materialFit = fitCanvasText(ctx, materialText, numberBoxW, 'bold', mmToPx(3.2, LABEL_DPI), mmToPx(2.2, LABEL_DPI));
+      ctx.font = `bold ${materialFit.size}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+      ctx.fillText(materialFit.text, numberBoxX, infoStartY);
 
-      // Print parameters list
-      const lineHeight = mmToPx(2.1, LABEL_DPI);
-      const paramsY = manufacturerY + mmToPx(2.2, LABEL_DPI);
-      const idBarH = mmToPx(2.4, LABEL_DPI);
-      const idBarY = h - pad - idBarH;
-      const availableHeight = idBarY - paramsY - mmToPx(0.3, LABEL_DPI);
-      const maxDetails = Math.max(0, Math.floor(availableHeight / lineHeight));
-      const detailsToShow = labelData.printDetails.slice(0, maxDetails);
-      detailsToShow.forEach((detail, index) => {
-        const y = paramsY + index * lineHeight;
-        ctx.font = `bold ${mmToPx(1.1, LABEL_DPI)}px Arial`;
-        ctx.fillText(detail.label + ':', textX + mmToPx(0.3, LABEL_DPI), y);
-        ctx.font = `${mmToPx(1.1, LABEL_DPI)}px Arial`;
-        ctx.fillText(detail.value, textX + mmToPx(10.2, LABEL_DPI), y);
-      });
-      if (labelData.printDetails.length > detailsToShow.length) {
-        const overflowY = paramsY + detailsToShow.length * lineHeight;
-        ctx.font = `bold ${mmToPx(1.1, LABEL_DPI)}px Arial`;
-        ctx.fillText('...', textX + mmToPx(0.3, LABEL_DPI), overflowY);
-      }
-
-      // ID bar at the bottom of the left text area (always visible)
-      ctx.fillStyle = '#000000';
-      roundRectPath(ctx, textX + mmToPx(0.2, LABEL_DPI), idBarY, textW - mmToPx(0.4, LABEL_DPI), idBarH, mmToPx(0.5, LABEL_DPI));
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `bold ${mmToPx(1.6, LABEL_DPI)}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
-      const idTextBar = labelData.number || '—';
-      const idTextBarW = ctx.measureText(idTextBar).width;
-      const idXCenter = textX + Math.round((textW - idTextBarW) / 2);
-      ctx.textBaseline = 'middle';
-      ctx.fillText(idTextBar, idXCenter, idBarY + idBarH / 2);
-      ctx.textBaseline = 'top';
-
-      // Optional bottom dashed row if no details
-      if (labelData.printDetails.length === 0) {
-        ctx.strokeStyle = '#000000';
-        ctx.setLineDash([mmToPx(0.5, LABEL_DPI), mmToPx(0.5, LABEL_DPI)]);
-        ctx.beginPath();
-        ctx.moveTo(textX + mmToPx(0.3, LABEL_DPI), idBarY - mmToPx(0.6, LABEL_DPI));
-        ctx.lineTo(textX + textW - mmToPx(0.3, LABEL_DPI), idBarY - mmToPx(0.6, LABEL_DPI));
-        ctx.stroke();
-        ctx.setLineDash([]);
+      // Manufacturer line - larger font
+      const manufacturerText = (labelData.manufacturer && labelData.manufacturer !== '—') ? labelData.manufacturer : '';
+      if (manufacturerText) {
+        const manufacturerFit = fitCanvasText(ctx, manufacturerText, numberBoxW, 'bold', mmToPx(3.0, LABEL_DPI), mmToPx(2.0, LABEL_DPI));
+        ctx.font = `bold ${manufacturerFit.size}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+        ctx.fillText(manufacturerFit.text, numberBoxX, infoStartY + mmToPx(3.5, LABEL_DPI));
       }
 
       return canvas;
