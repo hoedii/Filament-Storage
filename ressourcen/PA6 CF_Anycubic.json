@@ -1,0 +1,31 @@
+{
+  "name": "PA6 CF",
+  "product_url": "https://eu.anycubic.com/products/pa6-cf",
+  "technical_data": {
+    "Dry Out Before Use": "Required",
+    "Dry Conditions": "80℃, 8h-12h",
+    "ACE Pro Compatibility": "NOT Compatible",
+    "Printing Temperature": "260-300℃",
+    "Heated Bed Temperature": "40-100℃",
+    "Printing Speed": "50-100 mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "215°C",
+    "Elongation at Break": "3%",
+    "Properties": [
+      "- Superior Strength and Stiffness",
+      "- Toughness & Vibration Resistance",
+      "- Electrically conductive",
+      "- Exceptional Thermal Resistance"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 6,
+    "stiffness": 6,
+    "budgetFriendly": 3,
+    "heatResistance": 8,
+    "printability": 5
+  }
+}
+
+
+
+
