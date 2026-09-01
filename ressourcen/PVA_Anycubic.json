@@ -1,0 +1,29 @@
+{
+  "name": "PVA",
+  "product_url": "https://store.anycubic.com/products/pva",
+  "technical_data": {
+    "Dry Out Before Use": "Required",
+    "Dry Conditions": "80℃, 8h-12h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "220-240℃",
+    "Heated Bed Temperature": "35-65℃",
+    "Printing Speed": "＜200mm/s",
+    "Properties": [
+    "- Water-Soluble",
+    "- Strong Adhesion (PLA, PETG, TPU)",
+    "- Effortless Support Removal"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 0,
+    "stiffness": 0,
+    "budgetFriendly": 0,
+    "heatResistance": 0,
+    "printability": 0
+  }
+}
+
+
+
+
+
