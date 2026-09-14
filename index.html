@@ -11,12 +11,38 @@
   </script>
   <style>
     :root {
-      --primary: #0057b8;
-      --accent: #f0f4f9;
-      --text: #222;
-      --border: #ddd;
-      --bg: #fff;
+      /* Design system tokens */
+      --color-primary: #0563d6; /* primary accent */
+      --color-primary-600: #0456b8;
+      --color-bg: #0f1724; /* fallback for dark surfaces when needed */
+      --color-surface: #ffffff;
+      --color-surface-elevated: #fbfdff;
+      --color-border: rgba(15, 23, 30, 0.06);
+      --color-text: #111827;
+      --color-text-muted: #6b7280;
+      --color-accent-muted: #f3f8ff;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --shadow-sm: 0 6px 18px rgba(8,15,28,0.06);
+      --shadow-md: 0 12px 36px rgba(8,15,28,0.12);
+      --spacing-1: 4px;
+      --spacing-2: 8px;
+      --spacing-3: 12px;
+      --spacing-4: 16px;
+      --spacing-5: 24px;
+      --spacing-6: 32px;
+      --max-content-width: 1500px;
+
+      /* legacy compatibility tokens (used by existing code) */
+      --primary: #0563d6;
+      --accent: var(--color-accent-muted);
+      --text: var(--color-text);
+      --border: var(--color-border);
+      --bg: var(--color-surface);
     }
+
+    /* removed setFixedHeaderPosition per updated sticky header strategy */
 
     /* Dark mode variable overrides */
     body.dark {
@@ -31,12 +57,70 @@
     }
 
     body {
-      font-family: "Segoe UI", sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
       margin: 0;
-      padding: 40px;
-      background: var(--accent);
+      padding: 28px 20px 48px 20px;
+      background: linear-gradient(180deg, #f7fbff 0%, var(--accent) 100%);
       color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
+
+    /* App shell */
+    .app-shell { display:block;width:100%; }
+    .app-container { width:100%; max-width:var(--max-content-width); margin:0 auto; }
+    .app-header { display:flex;align-items:center;gap:18px;padding:18px 18px;margin-bottom:18px;position:sticky;top:14px;z-index:100;background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,255,0.8));backdrop-filter: blur(6px);border-radius:12px;box-shadow: var(--shadow-sm);align-items:center; }
+    .brand { display:flex;align-items:center;gap:12px;font-weight:700;color:var(--color-primary); }
+    .brand img { width:36px;height:36px;border-radius:8px;object-fit:cover; }
+    .nav-tabs { display:flex;gap:10px;align-items:center;margin-left:8px; }
+    .nav-tab { padding:8px 14px;border-radius:10px;color:var(--color-text-muted);cursor:pointer;font-weight:700;transition:all 180ms ease;font-size:1rem;display:inline-flex;align-items:center;gap:8px; }
+    .nav-tab:hover { color:var(--color-text); transform:translateY(-1px); }
+    .nav-tab.active { background:transparent;color:var(--color-text); box-shadow:none; border-bottom:3px solid var(--color-primary); padding-bottom:6px; }
+    .toolbar { display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-left:auto; }
+    .search-wrap { display:flex;align-items:center;gap:8px;background:var(--color-surface-elevated);border-radius:14px;padding:8px 12px;border:1px solid transparent;box-shadow:var(--shadow-sm); }
+    .search-shortcut { font-size:12px;color:var(--color-text-muted);padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(0,0,0,0.04); }
+
+    .stat-cards { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0 8px 0; }
+    .stat-card { background:var(--color-surface-elevated);border-radius:14px;padding:14px;border:1px solid var(--color-border);display:flex;flex-direction:column;gap:6px; }
+    .stat-card .label { font-size:12px;color:var(--color-text-muted); }
+    .stat-card .value { font-size:20px;font-weight:700;color:var(--color-text); }
+
+    /* modern button system */
+    .btn { display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;border:1px solid transparent;cursor:pointer;font-weight:600;transition:all 160ms ease; }
+    .btn-primary { background:var(--color-primary);color:#fff;border-color:var(--color-primary-600); }
+    .btn-ghost { background:transparent;border-color:transparent;color:var(--color-text); }
+    .btn:disabled { opacity:0.45;cursor:not-allowed; }
+
+    /* responsive adjustments */
+    @media (max-width: 900px) {
+      .stat-cards { grid-template-columns:repeat(2,1fr); }
+      .nav-tabs { display:none; }
+      .toolbar { gap:8px; }
+    }
+
+    @media (max-width: 520px) {
+      .stat-cards { grid-template-columns:1fr; }
+      .search-wrap { width:100%; }
+    }
+
+    /* Table improvements */
+    .table-container { width:100%; }
+    #spoolTable thead .table-head-cell {
+      position: sticky;
+      top: var(--header-height, 0px); /* dynamic offset under app header + overview cards */
+      background: linear-gradient(180deg, var(--color-surface-elevated), var(--bg));
+      z-index: 60;
+      backdrop-filter: blur(6px);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.6px;
+      color: var(--color-text-muted);
+      padding: 14px 12px;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 6px 18px rgba(10,20,40,0.04);
+    }
+    #spoolTable tbody tr { transition: background 160ms ease, transform 160ms ease; }
+    #spoolTable tbody tr:hover { transform: translateY(-1px); box-shadow: var(--shadow-sm); }
 
     h2 {
       margin-top: 0;
@@ -460,6 +544,19 @@
     body.dark .live-main { color: var(--text); }
     body.dark .live-meta { color: #9aa4af; }
   </style>
+  <style>
+    /* Modern refinements: table spacing, buttons, stat cards */
+    .card { border-radius: 14px; padding: 22px; }
+    .stat-cards { gap:18px; }
+    .stat-card { padding:18px 20px; border-radius:12px; background: linear-gradient(180deg,#ffffff,#fbfdff); box-shadow: 0 6px 20px rgba(10,20,40,0.04); }
+    #spoolTable { background: transparent; }
+    #spoolTable tbody tr { height:64px; }
+    #spoolTable td { padding: 18px 14px; vertical-align: middle; }
+    #spoolTable th { padding: 12px 14px; font-weight:700; color:var(--color-text-muted); font-size:12px; }
+    .btn { border-radius: 999px; padding:8px 14px; }
+    #toolsDropdown { border-radius:10px; overflow:hidden; }
+    .live-option { gap:12px; padding:10px 14px; }
+  </style>
 </head>
 <body>
   <div id="loader" style="position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.85);z-index:3000;pointer-events:auto;">
@@ -494,7 +591,68 @@
       </div>
     </form>
   </div>
+  <!-- App shell header (non-invasive): placeholders will receive existing elements -->
+  <div class="app-shell" aria-hidden="false">
+    <div class="app-container">
+      <header class="app-header" role="banner">
+        <div class="brand" aria-hidden="true">
+          <img src="https://raw.githubusercontent.com/hoedii/Filament-Storage/main/Logo%20Filamentlager.png" alt="Logo">
+        </div>
+        <nav class="nav-tabs" id="navTabsPlaceholder" role="tablist" aria-label="Views"></nav>
+        <div class="toolbar" style="margin-left:auto;display:flex;align-items:center;gap:12px;">
+          <div class="toolbar-center" id="searchPlaceholder"></div>
+          <div id="toolbarPlaceholder" style="display:flex;gap:8px;align-items:center;"></div>
+        </div>
+      </header>
+    </div>
+  </div>
   <div class="card">
+    <script>
+      // Move existing elements into the new app header placeholders without renaming IDs.
+      document.addEventListener('DOMContentLoaded', function() {
+        try {
+          const card = document.querySelector('.card');
+          const appShell = document.querySelector('.app-shell');
+          if (!card || !appShell) return;
+
+          const navP = document.getElementById('navTabsPlaceholder');
+          const searchP = document.getElementById('searchPlaceholder');
+          const toolbarP = document.getElementById('toolbarPlaceholder');
+
+          // Move view tabs (#viewTabs -> nav placeholder)
+          const viewTabs = document.getElementById('viewTabs');
+          if (viewTabs && navP) {
+            while (viewTabs.firstChild) navP.appendChild(viewTabs.firstChild);
+            viewTabs.remove();
+          }
+
+          // Move live search into center
+          const live = document.getElementById('liveSearchWrapper');
+          if (live && searchP) searchP.appendChild(live);
+
+          // Move toolbar items (keep original IDs)
+          ['themeToggle','searchBtn','toolsMenuBtn'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el && toolbarP) toolbarP.appendChild(el);
+          });
+
+          // Move tools dropdown after button (ensure positioned correctly)
+          const dd = document.getElementById('toolsDropdown');
+          if (dd && toolbarP) { toolbarP.appendChild(dd); dd.style.right = '0'; dd.style.left = 'auto'; }
+
+          // Add simple focus styles for keyboard users
+          const liveInput = document.getElementById('liveSearchInput');
+          if (liveInput) {
+            liveInput.addEventListener('focus', () => { liveInput.classList.add('focused'); });
+            liveInput.addEventListener('blur', () => { liveInput.classList.remove('focused'); });
+          }
+
+          /* header height JS removed — sticky position handled by CSS and static offset */
+        } catch (e) {
+          console.warn('Header element relocation failed', e);
+        }
+      });
+    </script>
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <div id="viewTabs" style="display:flex;gap:18px;align-items:center;">
         <span id="tabFilament" style="font-size:1.6rem;font-weight:600;cursor:pointer;color:#0057b8;">Filament Storage</span>
@@ -536,12 +694,18 @@
         </div>
       </div>
     </div>
+    
+    <!-- Overview / Summary cards (auto-updated) -->
+    <div id="overviewCards" class="stat-cards" aria-hidden="false"></div>
+
     <div id="filamentSection" style="display:block;">
-      <table id="spoolTable">
-        <thead id="tableHead"></thead>
-        <tbody></tbody>
-        <tfoot></tfoot>
-      </table>
+      <div class="table-container">
+        <table id="spoolTable">
+          <thead id="tableHead"></thead>
+          <tbody></tbody>
+          <tfoot></tfoot>
+        </table>
+      </div>
     </div>
     <div id="accessorySection" style="display:none; margin-top:16px;">
       <div id="heatInlineContent"></div>
@@ -1729,8 +1893,8 @@
       const keys = Object.keys(originalData[0] || {}).filter(k => k.toLowerCase() !== 'ordered');
       const headRow = document.createElement('tr');
       keys.forEach(k => {
-        const th = document.createElement('th');
-        th.style.position = 'relative';
+      const th = document.createElement('th');
+      th.classList.add('table-head-cell');
         th.textContent = k;
         // Sortier-Button
         const sortBtn = document.createElement('button');
@@ -2413,6 +2577,33 @@
         ["Total", total]
       ];
 
+      // Update overview cards (compact dashboard above the table)
+      try {
+        const overview = document.getElementById('overviewCards');
+        if (overview) {
+          const visibleRows = data.filter(r => r['Spool ID'] && r['Spool ID'].toString().trim() !== '');
+          const totalSpools = visibleRows.length;
+          const materials = new Set(visibleRows.map(r => (r['Material'] || '').toString().trim()).filter(Boolean));
+          const manufacturers = new Set(visibleRows.map(r => (r['Hersteller'] || r['Manufacturer'] || '').toString().trim()).filter(Boolean));
+          const weightKg = (total / 1000);
+          const cards = [
+            { label: 'Total Spools', value: totalSpools },
+            { label: 'Materials', value: materials.size },
+            { label: 'Manufacturers', value: manufacturers.size },
+            { label: 'Total Weight', value: weightKg.toFixed(2) + ' kg' }
+          ];
+          overview.innerHTML = cards.map(c => `
+            <div class="stat-card" role="region" aria-label="${c.label}">
+              <div class="label">${c.label}</div>
+              <div class="value">${c.value}</div>
+            </div>
+          `).join('');
+        }
+      } catch (e) {
+        // non-critical — keep legacy footer rendering
+        console.warn('Overview cards render failed', e);
+      }
+
       rows.forEach(([label, val]) => {
         const tr = document.createElement('tr');
         tr.className = 'summary-row';
@@ -2628,6 +2819,10 @@
           tabAccessory.style.background = 'transparent';
           tabFilament.style.padding = '0';
           tabAccessory.style.padding = '0';
+          tabFilament.classList.add('nav-tab');
+          tabAccessory.classList.add('nav-tab');
+          tabFilament.classList.add('active');
+          tabAccessory.classList.remove('active');
         } else {
           tabFilament.style.color = inactiveColor;
           tabAccessory.style.color = activeColor;
@@ -2635,6 +2830,10 @@
           tabFilament.style.background = 'transparent';
           tabAccessory.style.padding = '0';
           tabFilament.style.padding = '0';
+          tabFilament.classList.add('nav-tab');
+          tabAccessory.classList.add('nav-tab');
+          tabAccessory.classList.add('active');
+          tabFilament.classList.remove('active');
         }
       }
       if (filamentSection && accessorySection) {
@@ -4196,10 +4395,26 @@
         document.getElementById('loaderText').textContent = 'Loading data from Google Sheets';
       }
       const controller = new AbortController();
+      // Increase timeout to 20s to be more tolerant on slow networks
+      const timeoutDuration = 20000;
       const timeout = setTimeout(() => {
-        controller.abort();
-        if (showLoader) document.getElementById('loaderText').textContent = 'Timeout while loading data from Google Sheets!';
-      }, 12000);
+        try {
+          controller.abort();
+          if (showLoader) document.getElementById('loaderText').textContent = 'Timeout while loading data from Google Sheets!';
+          // Safe reload logic: try to reload once or twice, but avoid infinite loops
+          try {
+            const key = 'fs_timeoutReloadCount';
+            const count = parseInt(sessionStorage.getItem(key) || '0', 10) || 0;
+            if (count < 2) {
+              sessionStorage.setItem(key, String(count + 1));
+              // give user a short time to see message then reload
+              setTimeout(() => { try { window.location.reload(); } catch (e) {} }, 1700);
+            } else {
+              console.warn('loadData timeout reached multiple times; not reloading again.');
+            }
+          } catch (e) { /* ignore sessionStorage errors */ }
+        } catch (e) { /* ignore */ }
+      }, timeoutDuration);
       // Watchdog: ensure loader doesn't stay forever in case of unexpected hang
       const watchdog = setTimeout(() => {
         try {
@@ -4208,10 +4423,10 @@
           if (loader && loader.style.display !== 'none') {
             loader.style.display = 'none';
             if (loaderText) loaderText.textContent = 'Unable to load data — check console for errors.';
-            console.warn('loadData watchdog hidden the loader after 15s');
+            console.warn('loadData watchdog hidden the loader after 25s');
           }
         } catch (e) {}
-      }, 15000);
+      }, timeoutDuration + 5000);
       fetch(sheetUrl, { signal: controller.signal, cache: 'no-store' })
         .then(res => res.json())
         .then(responseData => {
@@ -4623,9 +4838,34 @@
       if (linkManagerModal) linkManagerModal.style.display = 'none';
       const tabFilament = document.getElementById('tabFilament');
       const tabAccessory = document.getElementById('tabAccessory');
-      if (tabFilament) tabFilament.onclick = () => setView('filament');
-      if (tabAccessory) tabAccessory.onclick = () => setView('accessories');
+      if (tabFilament) {
+        tabFilament.classList.add('nav-tab');
+        tabFilament.onclick = () => setView('filament');
+        tabFilament.setAttribute('role','tab');
+      }
+      if (tabAccessory) {
+        tabAccessory.classList.add('nav-tab');
+        tabAccessory.onclick = () => setView('accessories');
+        tabAccessory.setAttribute('role','tab');
+      }
       setView('filament');
+      // Add small keyboard-shortcut hint next to the search input
+      try {
+        const liveWrapper = document.getElementById('liveSearchWrapper');
+        if (liveWrapper && liveWrapper.parentElement) {
+          const hint = document.createElement('div');
+          hint.className = 'search-shortcut';
+          hint.textContent = (navigator.platform && /Mac/.test(navigator.platform)) ? '⌘ K' : 'Ctrl K';
+          liveWrapper.parentElement.appendChild(hint);
+          document.addEventListener('keydown', (ev) => {
+            if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'k') {
+              ev.preventDefault();
+              const inp = document.getElementById('liveSearchInput');
+              if (inp) { inp.focus(); inp.select && inp.select(); }
+            }
+          });
+        }
+      } catch (e) { /* non-critical */ }
     });
 
     // --- Search Modal Logic ---
