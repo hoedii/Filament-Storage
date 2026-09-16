@@ -1,0 +1,29 @@
+{
+  "name": "PET CF",
+  "product_url": "https://store.anycubic.com/products/pet-cf",
+  "technical_data": {
+    "Dry Out Before Use": "Required",
+    "Dry Conditions": "80℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "260-300℃",
+    "Heated Bed Temperature": "90-100℃",
+    "Printing Speed": "30-60mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "188°C",
+    "Elongation at Break": "5%",
+    "Properties": [
+    "- High HDT",
+    "- High Rigidity",
+    "- Low Warp"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 5,
+    "stiffness": 6,
+    "budgetFriendly": 2,
+    "heatResistance": 7,
+    "printability": 6
+  }
+}
+
+
+
