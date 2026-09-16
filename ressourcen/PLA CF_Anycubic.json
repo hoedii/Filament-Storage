@@ -1,0 +1,29 @@
+{
+  "name": "PLA CF",
+  "product_url": "https://store.anycubic.com/products/pla-cf-filament",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "55℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "190-230℃",
+    "Heated Bed Temperature": "55-70℃",
+    "Printing Speed": "40-250mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "60°C",
+    "Elongation at Break": "10.5%",
+    "Properties": [
+    "- Matte Texture",
+    "- Deformation Resist",
+    "- Enhanced Rigidity"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 3,
+    "stiffness": 4,
+    "budgetFriendly": 9,
+    "heatResistance": 1,
+    "printability": 9
+  }
+}
+
+
+
