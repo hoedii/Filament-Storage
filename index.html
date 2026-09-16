@@ -50,6 +50,15 @@
       --bg: #161b22;
       --text: #e6edf3;
       --border: #30363d;
+      --color-bg: #0d1117;
+      --color-surface: #161b22;
+      --color-surface-elevated: #1c2128;
+      --color-border: #30363d;
+      --color-text: #e6edf3;
+      --color-text-muted: #9da7b3;
+      --color-accent-muted: #202938;
+      --shadow-sm: 0 6px 18px rgba(0, 0, 0, 0.28);
+      --shadow-md: 0 12px 36px rgba(0, 0, 0, 0.42);
     }
 
     * {
@@ -64,6 +73,183 @@
       color: var(--text);
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+    }
+
+    body.dark {
+      background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+    }
+
+    body.dark .app-header {
+      background: linear-gradient(180deg, rgba(28, 33, 40, 0.96), rgba(22, 27, 34, 0.94));
+      border: 1px solid var(--border);
+    }
+
+    body.dark .card,
+    body.dark .stat-card,
+    body.dark table,
+    body.dark #liveSearchDropdown,
+    body.dark #toolsDropdown,
+    body.dark #searchInner,
+    body.dark #heatInner {
+      background: var(--color-surface) !important;
+      color: var(--text);
+      border-color: var(--border) !important;
+    }
+
+    body.dark .stat-card {
+      background: linear-gradient(180deg, #1c2128, #161b22) !important;
+    }
+
+    body.dark th,
+    body.dark #spoolTable thead .table-head-cell {
+      background: #0f1724 !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+
+    body.dark td,
+    body.dark .summary-row td {
+      color: var(--text);
+      border-color: var(--border) !important;
+    }
+
+    body.dark tr:hover td,
+    body.dark .live-option:hover,
+    body.dark #toolsDropdown button:hover {
+      background: #202938 !important;
+    }
+
+    body.dark button,
+    body.dark .btn,
+    body.dark input,
+    body.dark select,
+    body.dark textarea {
+      color: var(--text);
+    }
+
+    body.dark #themeToggle,
+    body.dark #searchBtn {
+      background: #1c2128 !important;
+      border-color: #3d444d !important;
+    }
+
+    body.dark #liveSearchInput {
+      background: #0d1117 !important;
+      border-color: #3d444d;
+      color: var(--text);
+    }
+
+    body.dark .search-shortcut {
+      border-color: #3d444d;
+      color: var(--color-text-muted);
+    }
+
+    /* Keep legacy click targets available to scripts without showing empty buttons. */
+    #printBtn,
+    #batchLabelExportBtn,
+    #linkManagerBtn {
+      display: none !important;
+    }
+
+    body.dark .filter-popup,
+    body.dark .filter-popup label {
+      background: #1c2128 !important;
+      color: var(--text) !important;
+      border-color: var(--border) !important;
+    }
+
+    body.dark #footerText,
+    body.dark footer {
+      color: #9da7b3 !important;
+    }
+
+    body.dark #spoolTable tbody td,
+    body.dark #spoolTable tbody td div,
+    body.dark #spoolTable tfoot td {
+      color: var(--text) !important;
+    }
+
+    body.dark .live-id,
+    body.dark .live-main,
+    body.dark .live-meta,
+    body.dark #toolsDropdown button,
+    body.dark #batchSelectionCount,
+    body.dark #heatClose,
+    body.dark #linkList,
+    body.dark #linkList span,
+    body.dark #linkList button,
+    body.dark #linkList a,
+    body.dark #createLinkInfo {
+      color: var(--text) !important;
+    }
+
+    body.dark #linkList a,
+    body.dark #linkManagerModal a,
+    body.dark #linkCodePopup a,
+    body.dark #spoolIdsPopup a {
+      color: #79b8ff !important;
+    }
+
+    body.dark #filamentImageModal > div,
+    body.dark #measurementHistoryModal > div,
+    body.dark #linkCodePopup > div,
+    body.dark #spoolIdsPopup > div,
+    body.dark #heatInfoPopup > div,
+    body.dark #filamentLabelModal > div,
+    body.dark #passcodeModal > div {
+      color: var(--text) !important;
+    }
+
+    body.dark #filamentImageModal > div div,
+    body.dark #measurementHistoryModal > div div,
+    body.dark #linkCodePopup > div div,
+    body.dark #spoolIdsPopup > div div,
+    body.dark #heatInfoPopup > div div,
+    body.dark #filamentLabelModal > div p,
+    body.dark #passcodeModal > div div {
+      color: var(--color-text-muted) !important;
+    }
+
+    body.dark #filamentImageModal h3,
+    body.dark #measurementHistoryModal h3,
+    body.dark #measurementHistoryModal h4,
+    body.dark #linkCodePopup h3,
+    body.dark #spoolIdsPopup > div > div,
+    body.dark #heatInfoPopup > div > div,
+    body.dark #filamentLabelModal h3,
+    body.dark #passcodeModal h3 {
+      color: var(--text) !important;
+    }
+
+    body.dark #filamentImageModal td,
+    body.dark #measurementHistoryModal td,
+    body.dark #filamentImageModal th,
+    body.dark #measurementHistoryModal th {
+      color: var(--text) !important;
+    }
+
+    body.dark #filamentImageModal input,
+    body.dark #measurementHistoryModal input,
+    body.dark #linkCodePopup textarea,
+    body.dark #heatInfoPopup button,
+    body.dark #passcodeModal input {
+      color: var(--text) !important;
+      background: #0d1117 !important;
+      border-color: var(--border) !important;
+    }
+
+    body.dark #filamentImageModal a,
+    body.dark #measurementHistoryModal a,
+    body.dark #filamentLabelModal button,
+    body.dark #searchInner button,
+    body.dark #linkCodePopup button,
+    body.dark #passcodeModal button {
+      color: #fff !important;
+    }
+
+    body.dark #filamentImageModal svg path,
+    body.dark #measurementHistoryModal svg path {
+      stroke: #9da7b3;
     }
 
     /* App shell */
