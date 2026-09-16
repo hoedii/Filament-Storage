@@ -853,6 +853,57 @@
     // Quality SVG caching for laser symbols
     let qualitySvgCache = { good: null, mid: null, bad: null, none: null };
     let laserParameters = []; // Cached laser parameters data
+    const imageUrlCache = new Map();
+    const lazyImageObserver = typeof IntersectionObserver !== 'undefined'
+      ? new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const img = entry.target;
+            const src = img.dataset.src;
+            if (src && img.getAttribute('src') !== src) {
+              img.src = src;
+            }
+            observer.unobserve(img);
+          });
+        }, { rootMargin: '200px 0px' })
+      : null;
+
+    function getCachedImageUrl(material, hersteller, farbe, fallbackPrefix = 'filament') {
+      const key = `${fallbackPrefix}|${String(material || '').trim()}|${String(hersteller || '').trim()}|${String(farbe || '').trim()}`;
+      if (!imageUrlCache.has(key)) {
+        const encodedMaterial = encodeURIComponent(String(material || '').trim());
+        const encodedHersteller = encodeURIComponent(String(hersteller || '').trim());
+        const encodedFarbe = encodeURIComponent(String(farbe || '').trim());
+        imageUrlCache.set(key, `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${encodedMaterial}_${encodedHersteller}_${encodedFarbe}.jpg`);
+      }
+      return imageUrlCache.get(key);
+    }
+
+    function createLazyImage(src, alt = '', className = '') {
+      const img = document.createElement('img');
+      if (className) img.className = className;
+      img.alt = alt;
+      img.loading = 'lazy';
+      img.decoding = 'async';
+      img.style.opacity = '0';
+      img.style.transition = 'opacity 120ms ease';
+      if (src) {
+        img.dataset.src = src;
+        if (lazyImageObserver) {
+          lazyImageObserver.observe(img);
+        } else {
+          img.src = src;
+          img.style.opacity = '1';
+        }
+      }
+      img.onerror = () => {
+        img.style.display = 'none';
+      };
+      img.onload = () => {
+        img.style.opacity = '1';
+      };
+      return img;
+    }
 
     function getLinkCode() {
       try {
@@ -1185,16 +1236,11 @@
           const opt = document.createElement('div');
           opt.className = 'live-option';
 
-          // Thumbnail image based on Material/Manufacturer/Color
-          const material = safeEnc(row['Material']);
-          const hersteller = safeEnc(row['Hersteller'] || row['Manufacturer']);
-          const farbe = safeEnc(row['Farbe'] || row['Color']);
-          const imgUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${material}_${hersteller}_${farbe}.jpg`;
-          const img = document.createElement('img');
-          img.className = 'live-thumb';
-          img.src = imgUrl;
-          img.alt = 'thumb';
-          img.onerror = () => { img.style.display = 'none'; };
+          const material = String(row['Material'] || '').trim();
+          const hersteller = String(row['Hersteller'] || row['Manufacturer'] || '').trim();
+          const farbe = String(row['Farbe'] || row['Color'] || '').trim();
+          const imgUrl = getCachedImageUrl(material, hersteller, farbe);
+          const img = createLazyImage(imgUrl, 'thumb', 'live-thumb');
           opt.appendChild(img);
 
           const id = document.createElement('span');
@@ -1877,30 +1923,44 @@
     // Nach dem initialen Rendern und nach jedem Daten-Reload Handler setzen
     document.addEventListener('DOMContentLoaded', async function() {
       setupCreateLinkBtnHandler();
-      // Initialize quality SVGs and load laser parameters on page load
-      await initializeQualitySvgs();
-      await loadLaserableMaterials();
-      await loadLaserParameters();
+      await Promise.allSettled([
+        initializeQualitySvgs(),
+        loadLaserableMaterials(),
+        loadLaserParameters()
+      ]);
     });
     // Auch nach jedem Daten-Reload sicherstellen
     function afterDataReload() {
       setupCreateLinkBtnHandler();
     }
 
+    function dedupeRowsBySpoolId(rows) {
+      const seen = new Set();
+      return (rows || []).filter(row => {
+        const id = String(row && row['Spool ID'] ? row['Spool ID'] : '').trim();
+        if (!id) return true;
+        if (seen.has(id)) return false;
+        seen.add(id);
+        return true;
+      });
+    }
+
+    let activeTableRenderToken = 0;
+
     function renderTable(data) {
+      const renderToken = ++activeTableRenderToken;
       const tableHead = document.getElementById('tableHead');
       const tbody = document.querySelector('#spoolTable tbody');
       tableHead.innerHTML = '';
       tbody.innerHTML = '';
 
-      // Kopfzeile immer anzeigen, auch wenn keine Daten
+      const safeData = dedupeRowsBySpoolId(data);
       const keys = Object.keys(originalData[0] || {}).filter(k => k.toLowerCase() !== 'ordered');
       const headRow = document.createElement('tr');
       keys.forEach(k => {
-      const th = document.createElement('th');
-      th.classList.add('table-head-cell');
+        const th = document.createElement('th');
+        th.classList.add('table-head-cell');
         th.textContent = k;
-        // Sortier-Button
         const sortBtn = document.createElement('button');
         sortBtn.textContent = sortState.key === k ? (sortState.asc ? '▲' : '▼') : '↕';
         sortBtn.style.marginLeft = '6px';
@@ -1919,7 +1979,6 @@
           applyFilters();
         };
         th.appendChild(sortBtn);
-        // Filter-Button NUR wenn nicht lockedFilters aktiv und nicht Measured (g) oder Remaining (g)
         if (!lockedFilters && k !== 'Measured (g)' && k !== 'Remaining (g)') {
           const chevronDownSVG = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline;vertical-align:middle;"><path d="M6 8L10 12L14 8" stroke="#4a90e2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
           const filterIcon = document.createElement('span');
@@ -1949,236 +2008,197 @@
       });
       tableHead.appendChild(headRow);
 
-      // Nur Zeilen rendern, wenn Daten vorhanden
-      if (data.length) {
-        // Sortierung anwenden
-        let sortedData = [...data];
-        if (sortState.key) {
-          sortedData.sort((a, b) => {
-            const valA = a[sortState.key] || '';
-            const valB = b[sortState.key] || '';
-            
-            // Spezialfall: Farben nach Farbton (Regenbogen) sortieren
-            if (sortState.key === 'Color' || sortState.key === 'Farbe') {
-              const hueA = getColorHue(valA);
-              const hueB = getColorHue(valB);
-              return sortState.asc ? (hueA - hueB) : (hueB - hueA);
-            }
-            
-            // Zahlenvergleich, falls beide Werte Zahlen sind
-            if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
-              return sortState.asc ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
-            }
-            // Stringvergleich
-            return sortState.asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
-          });
-        }
+      if (!safeData.length) return;
 
-        // Zeilen ohne Spool ID ausblenden
-        sortedData = sortedData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
-
-        // Immer alle Zeilen anzeigen
-        let rowsToShow = sortedData;
-
-        rowsToShow.forEach(row => {
-          const tr = document.createElement('tr');
-          keys.forEach(key => {
-            const td = document.createElement('td');
-            if (row[key] === 'x') {
-              td.classList.add('checkbox');
-              td.innerHTML = '✔️';
-            } else if (!isNaN(row[key]) && row[key] !== '') {
-              td.classList.add('numeric');
-              // Spezialfall: Remaining (g) mit modernem Balken-Design
-              if (key === 'Remaining (g)') {
-                const val = parseFloat(row[key]);
-                const isUnused = val === 1000;
-                
-                // Container
-                const container = document.createElement('div');
-                container.style.display = 'flex';
-                container.style.flexDirection = 'column';
-                container.style.gap = '8px';
-                container.style.alignItems = 'center';
-                container.style.width = '100%';
-                container.style.opacity = isUnused ? '0.5' : '1';
-                
-                // Text oben (Grammatur) - modern und clean
-                const textDiv = document.createElement('div');
-                textDiv.style.fontSize = '0.9rem';
-                textDiv.style.fontWeight = '700';
-                textDiv.style.letterSpacing = '-0.3px';
-                textDiv.style.color = isUnused ? '#bbb' : '#333';
-                const isOrdered = String(row['ordered'] || '').trim().toLowerCase() === 'x';
-                if (isOrdered && val === 0) {
-                  textDiv.textContent = 'ordered';
-                  textDiv.style.color = '#111';
-                } else {
-                  textDiv.textContent = val.toFixed(1) + ' g';
-                }
-                container.appendChild(textDiv);
-                
-                // Balken-Container (modernes Design)
-                const barContainer = document.createElement('div');
-                barContainer.style.width = '100%';
-                barContainer.style.height = '8px';
-                barContainer.style.background = 'rgba(0, 0, 0, 0.08)';
-                barContainer.style.borderRadius = '4px';
-                barContainer.style.overflow = 'hidden';
-                barContainer.style.boxShadow = 'inset 0 1px 2px rgba(0, 0, 0, 0.05)';
-                
-                // Gefüllter Balken
-                const barFill = document.createElement('div');
-                barFill.style.height = '100%';
-                barFill.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
-                barFill.style.borderRadius = '4px';
-                
-                // Breite basierend auf 1000g Maximum
-                const percentage = Math.min((val / 1000) * 100, 100);
-                barFill.style.width = percentage + '%';
-                
-                // Modernes Farbschema mit Gradient
-                if (isUnused) {
-                  // Dunkelgrün für ungebraucht (aber ausgegraut wirkend)
-                  barFill.style.background = '#2e7d32';
-                } else if (val === 0) {
-                  barFill.style.background = 'transparent';
-                } else if (val >= 900) {
-                  barFill.style.background = 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)';
-                } else if (val >= 600) {
-                  // Grün-Gelb Zone
-                  const t = (val - 600) / 300;
-                  barFill.style.background = interpolateColor('#ffeb3b', '#81c784', t);
-                } else if (val >= 300) {
-                  // Gelb-Orange Zone
-                  const t = (val - 300) / 300;
-                  barFill.style.background = interpolateColor('#ff9800', '#ffeb3b', t);
-                } else {
-                  // Rot Zone
-                  const t = val / 300;
-                  barFill.style.background = interpolateColor('#ef5350', '#ff9800', t);
-                }
-                
-                barFill.style.boxShadow = percentage > 10 ? '0 0 4px rgba(0, 0, 0, 0.1)' : 'none';
-                
-                barContainer.appendChild(barFill);
-                container.appendChild(barContainer);
-                
-                td.appendChild(container);
-              } else {
-                td.textContent = parseFloat(row[key]).toFixed(1) + ' g';
-              }
-            } else if (key === 'Farbe' || key === 'Color') {
-              const wrapper = document.createElement('div');
-              wrapper.style.display = 'flex';
-              wrapper.style.alignItems = 'center';
-              wrapper.style.justifyContent = 'flex-start';
-              wrapper.style.gap = '10px';
-              
-              // Prüfe, ob Material laser-bar ist
-              const material = row['Material'] || '';
-              const color = row[key] || '';
-              const isLaser = isLaserable(material, color);
-              const quality = getLaserQualityForFilament(material, color);
-              console.log('Checking laser for:', { material, color, key, isLaser, quality, laserableMaterials });
-              
-              // Lasersymbol LINKS mit Quality-Badge oder graues Symbol
-              if (quality) {
-                const badgeHtml = getQualityBadge(quality);
-                if (badgeHtml) {
-                  const badgeContainerSpan = document.createElement('span');
-                  badgeContainerSpan.innerHTML = badgeHtml;
-                  badgeContainerSpan.style.cursor = 'pointer';
-                  badgeContainerSpan.style.title = 'Laserparameter ansehen';
-                  // Add no-glow class for table view (removes drop-shadow effect)
-                  const badgeSpan = badgeContainerSpan.querySelector('.quality-badge');
-                  if (badgeSpan) {
-                    badgeSpan.classList.add('no-glow');
-                  }
-                  badgeContainerSpan.onclick = (e) => {
-                    e.stopPropagation();
-                    // Open Laser Settings Library with this filament's parameters
-                    window.lastLaserFilament = { material, color, row };
-                    window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
-                  };
-                  wrapper.appendChild(badgeContainerSpan);
-                }
-              } else {
-                // kein Eintrag: graues Lasersymbol
-                const badgeHtml = getQualityBadge('none');
-                if (badgeHtml) {
-                  const badgeContainerSpan = document.createElement('span');
-                  badgeContainerSpan.innerHTML = badgeHtml;
-                  badgeContainerSpan.style.cursor = 'default';
-                  badgeContainerSpan.style.title = 'kein Laser-Eintrag';
-                  // make it appear subdued
-                  const badgeSpan = badgeContainerSpan.querySelector('.quality-badge');
-                  if (badgeSpan) {
-                    badgeSpan.classList.add('no-glow');
-                  }
-                  wrapper.appendChild(badgeContainerSpan);
-                } else {
-                  // Platzhalter damit Vierecke untereinander ausgerichtet sind
-                  const spacer = document.createElement('div');
-                  spacer.style.width = '18px';
-                  spacer.style.height = '18px';
-                  spacer.style.flexShrink = '0';
-                  wrapper.appendChild(spacer);
-                }
-              }
-              
-              // Farbfeld
-              const colorValue = row[key] || '';
-              const colorBox = document.createElement('span');
-              colorBox.style.display = 'inline-block';
-              colorBox.style.width = '22px';
-              colorBox.style.height = '22px';
-              colorBox.style.borderRadius = '6px';
-              colorBox.style.border = '1.5px solid #bbb';
-              colorBox.style.boxSizing = 'border-box';
-              colorBox.style.flexShrink = '0';
-              // Prüfe auf red-blue für Farbverlauf
-              const colorValueLower = colorValue.toLowerCase().trim();
-              if (colorValueLower === 'red-blue' || colorValueLower === 'redblue') {
-                colorBox.style.background = 'linear-gradient(to right, #f44336, #2196f3)';
-              } else if (colorValueLower === 'rainbow' || colorValueLower.includes('rainbow')) {
-                colorBox.style.background = 'linear-gradient(to right, #9c27b0, #4caf50, #ffeb3b, #e91e63)';
-              } else {
-                let cssColor = getCssColor(colorValue);
-                colorBox.style.background = cssColor;
-              }
-              wrapper.appendChild(colorBox);
-              
-              // Namen und Info-Icon nebeneinander
-              const nameInfoRow = document.createElement('div');
-              nameInfoRow.style.display = 'flex';
-              nameInfoRow.style.flexDirection = 'row';
-              nameInfoRow.style.alignItems = 'center';
-              nameInfoRow.style.gap = '6px';
-              // Farbnamen
-              const colorDiv = document.createElement('div');
-              colorDiv.textContent = row[key] || '';
-              nameInfoRow.appendChild(colorDiv);
-
-              wrapper.appendChild(nameInfoRow);
-              td.appendChild(wrapper);
-            } else {
-              td.textContent = row[key] || '';
-            }
-            tr.appendChild(td);
-          });
-          // Click-Handler auf gesamte Zeile: Öffne Filament-Informationen
-          tr.style.cursor = 'pointer';
-          tr.onclick = (e) => {
-            // Verhindere, dass Klicks auf interaktive Elemente die Zeile triggern
-            if (e.target.closest('button') || e.target.closest('.filter-toggle') || e.target.closest('.filter-popup')) {
-              return;
-            }
-            showFilamentImage(row);
-          };
-          tbody.appendChild(tr);
+      let sortedData = [...safeData];
+      if (sortState.key) {
+        sortedData.sort((a, b) => {
+          const valA = a[sortState.key] || '';
+          const valB = b[sortState.key] || '';
+          if (sortState.key === 'Color' || sortState.key === 'Farbe') {
+            const hueA = getColorHue(valA);
+            const hueB = getColorHue(valB);
+            return sortState.asc ? (hueA - hueB) : (hueB - hueA);
+          }
+          if (!isNaN(valA) && !isNaN(valB) && valA !== '' && valB !== '') {
+            return sortState.asc ? (parseFloat(valA) - parseFloat(valB)) : (parseFloat(valB) - parseFloat(valA));
+          }
+          return sortState.asc ? String(valA).localeCompare(String(valB)) : String(valB).localeCompare(String(valA));
         });
       }
+
+      sortedData = sortedData.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '');
+      const rowsToShow = sortedData;
+      const batchSize = 40;
+
+      function appendRow(row) {
+        const tr = document.createElement('tr');
+        keys.forEach(key => {
+          const td = document.createElement('td');
+          if (row[key] === 'x') {
+            td.classList.add('checkbox');
+            td.innerHTML = '✔️';
+          } else if (!isNaN(row[key]) && row[key] !== '') {
+            td.classList.add('numeric');
+            if (key === 'Remaining (g)') {
+              const val = parseFloat(row[key]);
+              const isUnused = val === 1000;
+              const container = document.createElement('div');
+              container.style.display = 'flex';
+              container.style.flexDirection = 'column';
+              container.style.gap = '8px';
+              container.style.alignItems = 'center';
+              container.style.width = '100%';
+              container.style.opacity = isUnused ? '0.5' : '1';
+              const textDiv = document.createElement('div');
+              textDiv.style.fontSize = '0.9rem';
+              textDiv.style.fontWeight = '700';
+              textDiv.style.letterSpacing = '-0.3px';
+              textDiv.style.color = isUnused ? '#bbb' : '#333';
+              const isOrdered = String(row['ordered'] || '').trim().toLowerCase() === 'x';
+              if (isOrdered && val === 0) {
+                textDiv.textContent = 'ordered';
+                textDiv.style.color = '#111';
+              } else {
+                textDiv.textContent = val.toFixed(1) + ' g';
+              }
+              container.appendChild(textDiv);
+              const barContainer = document.createElement('div');
+              barContainer.style.width = '100%';
+              barContainer.style.height = '8px';
+              barContainer.style.background = 'rgba(0, 0, 0, 0.08)';
+              barContainer.style.borderRadius = '4px';
+              barContainer.style.overflow = 'hidden';
+              barContainer.style.boxShadow = 'inset 0 1px 2px rgba(0, 0, 0, 0.05)';
+              const barFill = document.createElement('div');
+              barFill.style.height = '100%';
+              barFill.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+              barFill.style.borderRadius = '4px';
+              const percentage = Math.min((val / 1000) * 100, 100);
+              barFill.style.width = percentage + '%';
+              if (isUnused) {
+                barFill.style.background = '#2e7d32';
+              } else if (val === 0) {
+                barFill.style.background = 'transparent';
+              } else if (val >= 900) {
+                barFill.style.background = 'linear-gradient(90deg, #4caf50 0%, #66bb6a 100%)';
+              } else if (val >= 600) {
+                const t = (val - 600) / 300;
+                barFill.style.background = interpolateColor('#ffeb3b', '#81c784', t);
+              } else if (val >= 300) {
+                const t = (val - 300) / 300;
+                barFill.style.background = interpolateColor('#ff9800', '#ffeb3b', t);
+              } else {
+                const t = val / 300;
+                barFill.style.background = interpolateColor('#ef5350', '#ff9800', t);
+              }
+              barFill.style.boxShadow = percentage > 10 ? '0 0 4px rgba(0, 0, 0, 0.1)' : 'none';
+              barContainer.appendChild(barFill);
+              container.appendChild(barContainer);
+              td.appendChild(container);
+            } else {
+              td.textContent = parseFloat(row[key]).toFixed(1) + ' g';
+            }
+          } else if (key === 'Farbe' || key === 'Color') {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.justifyContent = 'flex-start';
+            wrapper.style.gap = '10px';
+            const material = row['Material'] || '';
+            const color = row[key] || '';
+            const quality = getLaserQualityForFilament(material, color);
+            if (quality) {
+              const badgeHtml = getQualityBadge(quality);
+              if (badgeHtml) {
+                const badgeContainerSpan = document.createElement('span');
+                badgeContainerSpan.innerHTML = badgeHtml;
+                badgeContainerSpan.style.cursor = 'pointer';
+                badgeContainerSpan.style.title = 'Laserparameter ansehen';
+                const badgeSpan = badgeContainerSpan.querySelector('.quality-badge');
+                if (badgeSpan) badgeSpan.classList.add('no-glow');
+                badgeContainerSpan.onclick = (e) => {
+                  e.stopPropagation();
+                  window.lastLaserFilament = { material, color, row };
+                  window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
+                };
+                wrapper.appendChild(badgeContainerSpan);
+              }
+            } else {
+              const badgeHtml = getQualityBadge('none');
+              if (badgeHtml) {
+                const badgeContainerSpan = document.createElement('span');
+                badgeContainerSpan.innerHTML = badgeHtml;
+                badgeContainerSpan.style.cursor = 'default';
+                badgeContainerSpan.style.title = 'kein Laser-Eintrag';
+                const badgeSpan = badgeContainerSpan.querySelector('.quality-badge');
+                if (badgeSpan) badgeSpan.classList.add('no-glow');
+                wrapper.appendChild(badgeContainerSpan);
+              } else {
+                const spacer = document.createElement('div');
+                spacer.style.width = '18px';
+                spacer.style.height = '18px';
+                spacer.style.flexShrink = '0';
+                wrapper.appendChild(spacer);
+              }
+            }
+            const colorValue = row[key] || '';
+            const colorBox = document.createElement('span');
+            colorBox.style.display = 'inline-block';
+            colorBox.style.width = '22px';
+            colorBox.style.height = '22px';
+            colorBox.style.borderRadius = '6px';
+            colorBox.style.border = '1.5px solid #bbb';
+            colorBox.style.boxSizing = 'border-box';
+            colorBox.style.flexShrink = '0';
+            const colorValueLower = colorValue.toLowerCase().trim();
+            if (colorValueLower === 'red-blue' || colorValueLower === 'redblue') {
+              colorBox.style.background = 'linear-gradient(to right, #f44336, #2196f3)';
+            } else if (colorValueLower === 'rainbow' || colorValueLower.includes('rainbow')) {
+              colorBox.style.background = 'linear-gradient(to right, #9c27b0, #4caf50, #ffeb3b, #e91e63)';
+            } else {
+              colorBox.style.background = getCssColor(colorValue);
+            }
+            wrapper.appendChild(colorBox);
+            const nameInfoRow = document.createElement('div');
+            nameInfoRow.style.display = 'flex';
+            nameInfoRow.style.flexDirection = 'row';
+            nameInfoRow.style.alignItems = 'center';
+            nameInfoRow.style.gap = '6px';
+            const colorDiv = document.createElement('div');
+            colorDiv.textContent = row[key] || '';
+            nameInfoRow.appendChild(colorDiv);
+            wrapper.appendChild(nameInfoRow);
+            td.appendChild(wrapper);
+          } else {
+            td.textContent = row[key] || '';
+          }
+          tr.appendChild(td);
+        });
+        tr.style.cursor = 'pointer';
+        tr.onclick = (e) => {
+          if (e.target.closest('button') || e.target.closest('.filter-toggle') || e.target.closest('.filter-popup')) return;
+          showFilamentImage(row);
+        };
+        return tr;
+      }
+
+      let startIndex = 0;
+      function renderChunk() {
+        if (renderToken !== activeTableRenderToken) return;
+        const fragment = document.createDocumentFragment();
+        const endIndex = Math.min(startIndex + batchSize, rowsToShow.length);
+        for (let i = startIndex; i < endIndex; i += 1) {
+          fragment.appendChild(appendRow(rowsToShow[i]));
+        }
+        tbody.appendChild(fragment);
+        startIndex = endIndex;
+        if (startIndex < rowsToShow.length) {
+          requestAnimationFrame(renderChunk);
+        }
+      }
+
+      requestAnimationFrame(renderChunk);
     }
 
     function toggleFilterPopup(e, key, data, userClick = false, forceOpen = false) {
@@ -4435,7 +4455,7 @@
         .then(res => res.json())
         .then(responseData => {
           // Extract the filamentstats array for the main table
-          const data = responseData.filamentstats || [];
+          const data = dedupeRowsBySpoolId(responseData.filamentstats || []);
           // Heat inserts für separates Fenster
           heatInserts = responseData.heatinserts || [];
           clearTimeout(timeout);
