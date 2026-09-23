@@ -1,6 +1,6 @@
 {
   "name": "PC",
-  "name": "32",
+  "price": "32",
   "product_url": "https://store.anycubic.com/products/pc-filament?_sasdk=fbm9haC5kYWhpbmRlbkBnbWFpbC5jb20",
   "technical_data": {
     "Dry Out Before Use": "Required",
