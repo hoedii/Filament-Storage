@@ -210,6 +210,7 @@
       color: var(--color-text-muted) !important;
     }
 
+    body.dark #filamentImageModal h2,
     body.dark #filamentImageModal h3,
     body.dark #measurementHistoryModal h3,
     body.dark #measurementHistoryModal h4,
@@ -266,7 +267,7 @@
     .search-wrap { display:flex;align-items:center;gap:8px;background:var(--color-surface-elevated);border-radius:14px;padding:8px 12px;border:1px solid transparent;box-shadow:var(--shadow-sm); }
     .search-shortcut { font-size:12px;color:var(--color-text-muted);padding:6px 8px;border-radius:8px;background:transparent;border:1px solid rgba(0,0,0,0.04); }
 
-    .stat-cards { display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0 8px 0; }
+    .stat-cards { display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:16px 0 8px 0; }
     .stat-card { background:var(--color-surface-elevated);border-radius:14px;padding:14px;border:1px solid var(--color-border);display:flex;flex-direction:column;gap:6px; }
     .stat-card .label { font-size:12px;color:var(--color-text-muted); }
     .stat-card .value { font-size:20px;font-weight:700;color:var(--color-text); }
@@ -660,6 +661,394 @@
       border: 1px solid #30363d !important;
     }
 
+    #filamentImageModal .filament-modal-inner {
+      position: relative;
+      width: min(1180px, 100%);
+      max-height: calc(100vh - 32px);
+      overflow: auto;
+      background: #fff;
+      padding: 20px 22px 22px;
+      border-radius: 16px;
+      box-shadow: 0 18px 50px rgba(8, 15, 28, 0.22);
+    }
+
+    #filamentImageModal .filament-modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 2;
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 10px;
+      background: #f3f6fa;
+      color: #4b5563;
+      font-size: 22px;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    #filamentImageModal .filament-modal-close:hover {
+      background: #e8eef6;
+    }
+
+    #filamentImageModal .filament-modal-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px 24px;
+      padding: 2px 44px 16px 0;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #e7eef6;
+    }
+
+    #filamentImageModal .filament-modal-heading {
+      min-width: 0;
+      flex: 1;
+    }
+
+    #filamentImageModal .filament-modal-name {
+      margin: 0 0 6px;
+      color: #111827;
+      font-size: 1.42rem;
+      font-weight: 750;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+    }
+
+    #filamentImageModal .filament-modal-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 10px;
+      margin-bottom: 10px;
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+
+    #filamentImageModal .filament-spool-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    #filamentImageModal .filament-spool-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border: 1px solid #e1e8f0;
+      border-radius: 999px;
+      background: #f3f6fa;
+      color: #4b5563;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+
+    #filamentImageModal .filament-spool-chip.is-current {
+      border-color: #9bc3f5;
+      background: #e8f1ff;
+      color: #0b4d99;
+    }
+
+    #filamentImageModal .filament-modal-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      min-width: 176px;
+      flex-shrink: 0;
+    }
+
+    #filamentImageModal .filament-modal-actions .filament-label-btn {
+      margin-top: 0;
+      justify-content: center;
+    }
+
+    #filamentImageModal .filament-price-box {
+      display: flex !important;
+      align-items: baseline;
+      justify-content: flex-start;
+      gap: 8px;
+      width: 100% !important;
+      min-width: 0;
+      margin: 14px 0 0;
+      padding: 9px 0 0;
+      border: 0;
+      border-top: 1px solid #e6eef6;
+      border-radius: 0;
+      background: transparent;
+      color: #6b7280;
+      font-size: 0.78rem !important;
+      line-height: 1.2;
+    }
+
+    #filamentImageModal .filament-price-label {
+      font-size: 0.72rem !important;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+    }
+
+    #filamentImageModal .filament-price-value {
+      margin-left: 0;
+      font-size: 0.86rem !important;
+      font-weight: 650;
+      color: #374151;
+      white-space: nowrap;
+    }
+
+    #filamentImageModal .filament-modal-content {
+      display: grid;
+      grid-template-columns: minmax(300px, 340px) minmax(380px, 1.45fr) minmax(230px, 290px);
+      align-items: start;
+      gap: 16px;
+    }
+
+    #filamentImageModal .filament-image-panel,
+    #filamentImageModal .filament-info-panel,
+    #filamentImageModal .filament-history-panel {
+      min-width: 0;
+      padding: 16px;
+      border: 1px solid #e6eef6;
+      border-radius: 12px;
+      background: #fff;
+    }
+
+    #filamentImageModal .filament-image-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      background: #f8fbff;
+    }
+
+    #filamentImageModal .filament-image-panel img {
+      width: 100%;
+      max-height: 230px;
+      object-fit: contain;
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: 0 1px 8px rgba(15, 23, 42, 0.06);
+    }
+
+    #filamentImageModal .filament-product-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px 14px;
+      border-radius: 9px;
+      background: #0057b8;
+      color: #fff !important;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background 0.2s;
+    }
+
+    #filamentImageModal .filament-product-link:hover {
+      background: #003e87;
+    }
+
+    #filamentImageModal .filament-chart-card {
+      width: 100%;
+      padding: 10px 14px 6px;
+      border: 1px solid #e0e6ed;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    #filamentImageModal .filament-section-title {
+      margin: 0 0 10px;
+      color: #1f2937;
+      font-size: 0.95rem;
+      font-weight: 750;
+    }
+
+    #filamentImageModal .filament-spec-list {
+      display: grid;
+      grid-template-columns: minmax(108px, 36%) minmax(0, 1fr);
+      margin: 0;
+    }
+
+    #filamentImageModal .filament-spec-list dt,
+    #filamentImageModal .filament-spec-list dd {
+      margin: 0;
+      padding: 9px 0;
+      border-bottom: 1px solid #eef2f6;
+      font-size: 0.92rem;
+      line-height: 1.4;
+    }
+
+    #filamentImageModal .filament-spec-list dt {
+      padding-right: 10px;
+      color: #6b7280;
+      font-weight: 600;
+    }
+
+    #filamentImageModal .filament-spec-list dd {
+      color: #111827;
+      font-weight: 500;
+      word-break: break-word;
+    }
+
+    #filamentImageModal .filament-prop-box {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border: 1px solid #c9dbf3;
+      border-radius: 10px;
+      background: #f4f8fd;
+    }
+
+    #filamentImageModal .filament-prop-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    #filamentImageModal .filament-prop-list li {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid #d7e4f4;
+      color: #1f2937;
+      font-size: 0.82rem;
+      line-height: 1.3;
+    }
+
+    #filamentImageModal .filament-history-panel {
+      display: flex;
+      flex-direction: column;
+      width: auto !important;
+      margin: 0 !important;
+      background: #f8fafc;
+    }
+
+    #filamentImageModal .filament-history-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e7eef6;
+      color: #374151;
+      font-size: 0.92rem;
+      font-weight: 700;
+    }
+
+    #filamentImageModal .history-content {
+      min-height: 160px;
+      max-height: min(58vh, 480px);
+    }
+
+    body.dark #filamentImageModal .filament-modal-inner {
+      background: #161b22;
+    }
+
+    body.dark #filamentImageModal .filament-modal-close {
+      background: #21262d;
+      color: var(--text);
+    }
+
+    body.dark #filamentImageModal .filament-modal-header,
+    body.dark #filamentImageModal .filament-history-header,
+    body.dark #filamentImageModal .filament-spec-list dt,
+    body.dark #filamentImageModal .filament-spec-list dd {
+      border-color: #30363d;
+    }
+
+    body.dark #filamentImageModal .filament-modal-name,
+    body.dark #filamentImageModal .filament-section-title,
+    body.dark #filamentImageModal .filament-spec-list dd,
+    body.dark #filamentImageModal h2 {
+      color: var(--text) !important;
+    }
+
+    body.dark #filamentImageModal .filament-price-box {
+      border-top-color: #30363d;
+      background: transparent;
+    }
+
+    body.dark #filamentImageModal .filament-price-label {
+      color: #9da7b3 !important;
+    }
+
+    body.dark #filamentImageModal .filament-price-value {
+      color: #b9d9ff !important;
+    }
+
+    body.dark #filamentImageModal .filament-info-panel,
+    body.dark #filamentImageModal .filament-history-panel,
+    body.dark #filamentImageModal .filament-chart-card {
+      border-color: #30363d !important;
+      background: #1c2128;
+    }
+
+    body.dark #filamentImageModal .filament-image-panel {
+      border-color: #30363d;
+      background: #161b22;
+    }
+
+    body.dark #filamentImageModal .filament-spool-chip {
+      border-color: #30363d;
+      background: #21262d;
+      color: #9da7b3;
+    }
+
+    body.dark #filamentImageModal .filament-spool-chip.is-current {
+      border-color: #2f6fba;
+      background: #102a4a;
+      color: #b9d9ff;
+    }
+
+    body.dark #filamentImageModal .filament-prop-box {
+      border-color: #30363d;
+      background: #161b22;
+    }
+
+    body.dark #filamentImageModal .filament-prop-list li {
+      border-color: #30363d;
+      background: #21262d;
+      color: var(--text);
+    }
+
+    @media (max-width: 980px) {
+      #filamentImageModal .filament-modal-content {
+        grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+      }
+
+      #filamentImageModal .filament-history-panel {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 680px) {
+      #filamentImageModal .filament-modal-header {
+        flex-direction: column;
+        padding-right: 40px;
+      }
+
+      #filamentImageModal .filament-modal-actions {
+        width: 100%;
+      }
+
+      #filamentImageModal .filament-modal-content {
+        grid-template-columns: 1fr;
+      }
+
+      #filamentImageModal .filament-history-panel {
+        grid-column: auto;
+      }
+    }
+
     /* Elegant dark mode enhancements */
     body.dark .card {
       border: 1px solid #30363d !important;
@@ -1032,6 +1421,7 @@
     let rangeFilters = {};
     let sortState = { key: null, asc: true };
     let lockedFilters = null;
+    let overviewValueRenderToken = 0;
     // Restricted link mode: allowed spool IDs (filled when ?link= present)
     let allowedSpoolIds = null; // Set<string> or null when unrestricted
     // Laser-able materials from lasering.json
@@ -1040,6 +1430,7 @@
     let qualitySvgCache = { good: null, mid: null, bad: null, none: null };
     let laserParameters = []; // Cached laser parameters data
     const imageUrlCache = new Map();
+    const materialPriceCache = new Map();
     const lazyImageObserver = typeof IntersectionObserver !== 'undefined'
       ? new IntersectionObserver((entries, observer) => {
           entries.forEach(entry => {
@@ -2765,13 +3156,35 @@
       renderSummary(data);
     }
 
+    async function getMaterialPricePerKg(row) {
+      const material = String(row['Material'] || '').trim();
+      const manufacturer = String(row['Hersteller'] || row['Manufacturer'] || '').trim();
+      if (!material || !manufacturer) return null;
+
+      const cacheKey = `${material}|${manufacturer}`;
+      if (materialPriceCache.has(cacheKey)) return materialPriceCache.get(cacheKey);
+
+      const fileName = `${material}_${manufacturer}.json`;
+      const settingsUrl = `https://raw.githubusercontent.com/hoedii/Filament-Storage/main/ressourcen/${encodeURIComponent(fileName)}`;
+      const pricePromise = fetch(settingsUrl, { cache: 'no-store' })
+        .then(response => response.ok ? response.json() : null)
+        .then(json => {
+          const price = Number.parseFloat(String(json?.price ?? '').replace(',', '.'));
+          return Number.isFinite(price) ? price : null;
+        })
+        .catch(() => null);
+      materialPriceCache.set(cacheKey, pricePromise);
+      return pricePromise;
+    }
+
     function renderSummary(data) {
       const tfoot = document.querySelector('#spoolTable tfoot');
       tfoot.innerHTML = '';
+      const valueRenderToken = ++overviewValueRenderToken;
+      const spoolRows = data.filter(row => String(row['Spool ID'] || '').trim() !== '');
 
       let filament = 0, resin = 0;
-      // Nur Zeilen mit Spool ID berücksichtigen (wie PDF)
-      data.filter(row => row['Spool ID'] && row['Spool ID'].trim() !== '').forEach(row => {
+      spoolRows.forEach(row => {
         const mat = (row["Material"] || "").toLowerCase();
         const val = parseFloat(row["Remaining (g)"]);
         if (!isNaN(val)) {
@@ -2791,7 +3204,7 @@
       try {
         const overview = document.getElementById('overviewCards');
         if (overview) {
-          const visibleRows = data.filter(r => r['Spool ID'] && r['Spool ID'].toString().trim() !== '');
+          const visibleRows = spoolRows;
           const totalSpools = visibleRows.length;
           const materials = new Set(visibleRows.map(r => (r['Material'] || '').toString().trim()).filter(Boolean));
           const manufacturers = new Set(visibleRows.map(r => (r['Hersteller'] || r['Manufacturer'] || '').toString().trim()).filter(Boolean));
@@ -2800,7 +3213,8 @@
             { label: 'Total Spools', value: totalSpools },
             { label: 'Materials', value: materials.size },
             { label: 'Manufacturers', value: manufacturers.size },
-            { label: 'Total Weight', value: weightKg.toFixed(2) + ' kg' }
+            { label: 'Total Weight', value: weightKg.toFixed(2) + ' kg' },
+            { label: 'Value', value: '<span id="overviewValue">...</span>' }
           ];
           overview.innerHTML = cards.map(c => `
             <div class="stat-card" role="region" aria-label="${c.label}">
@@ -2808,6 +3222,23 @@
               <div class="value">${c.value}</div>
             </div>
           `).join('');
+
+          Promise.all(visibleRows.map(async row => {
+            const remaining = Number.parseFloat(String(row['Remaining (g)'] ?? '').replace(',', '.'));
+            const pricePerKg = await getMaterialPricePerKg(row);
+            return Number.isFinite(remaining) && pricePerKg !== null
+              ? (remaining / 1000) * pricePerKg
+              : null;
+          })).then(values => {
+            const valueElement = document.getElementById('overviewValue');
+            if (valueElement && valueRenderToken === overviewValueRenderToken) {
+              const pricedValues = values.filter(value => value !== null);
+              const totalValue = pricedValues.reduce((sum, value) => sum + value, 0);
+              valueElement.textContent = pricedValues.length
+                ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(totalValue)
+                : '-';
+            }
+          });
         }
       } catch (e) {
         // non-critical — keep legacy footer rendering
@@ -3378,6 +3809,7 @@
     function appendFilamentLabelButton(titleDiv, row, json) {
       const btn = document.createElement('button');
       btn.type = 'button';
+      btn.className = 'filament-label-btn';
       btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px;margin-right:6px"><path d="M5 7H19V17H5V7Z" stroke="currentColor" stroke-width="2"/><path d="M9 11H15" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M7 7L9 3H15L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Etikett erstellen`;
       btn.style.marginTop = '14px';
       btn.style.padding = '9px 18px';
@@ -3495,6 +3927,136 @@
       }
     }
 
+    function appendLaserQualityBadge(parent, material, farbe, row) {
+      const quality = getLaserQualityForFilament(material, farbe);
+      const badgeHtml = getQualityBadge(quality || 'none');
+      if (!badgeHtml) return;
+      const badgeSpan = document.createElement('span');
+      badgeSpan.innerHTML = badgeHtml;
+      if (quality) {
+        badgeSpan.style.cursor = 'pointer';
+        badgeSpan.title = 'Laserparameter ansehen';
+        badgeSpan.onclick = (e) => {
+          e.stopPropagation();
+          window.lastLaserFilament = { material, farbe, row };
+          window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
+        };
+      } else {
+        badgeSpan.style.cursor = 'default';
+        badgeSpan.title = 'kein Laser-Eintrag';
+      }
+      parent.appendChild(badgeSpan);
+    }
+
+    function createSpoolIdChips(matchingSpoolIds, currentSpoolId) {
+      const wrap = document.createElement('div');
+      wrap.className = 'filament-spool-chips';
+      matchingSpoolIds.forEach((id) => {
+        const chip = document.createElement('span');
+        const trimmedId = String(id || '').trim();
+        chip.className = 'filament-spool-chip' + (trimmedId && trimmedId === currentSpoolId ? ' is-current' : '');
+        chip.textContent = trimmedId;
+        wrap.appendChild(chip);
+      });
+      return wrap;
+    }
+
+    function createFilamentModalCard(modal) {
+      const inner = document.createElement('div');
+      inner.className = 'filament-modal-inner';
+      inner.onclick = (e) => e.stopPropagation();
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'filament-modal-close';
+      closeBtn.setAttribute('aria-label', 'Schließen');
+      closeBtn.textContent = '×';
+      closeBtn.onclick = (e) => {
+        e.stopPropagation();
+        modal.remove();
+      };
+      inner.appendChild(closeBtn);
+      return inner;
+    }
+
+    function createFilamentPriceBox(json) {
+      if (!json || json.price === undefined || json.price === null || String(json.price).trim() === '') return null;
+      const priceBox = document.createElement('div');
+      priceBox.className = 'filament-price-box';
+      const priceLabel = document.createElement('span');
+      priceLabel.className = 'filament-price-label';
+      priceLabel.textContent = 'Preis / kg';
+      const priceValue = document.createElement('span');
+      priceValue.className = 'filament-price-value';
+      const price = Number.parseFloat(String(json.price).replace(',', '.'));
+      priceValue.textContent = Number.isFinite(price)
+        ? new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(price)
+        : `${json.price} €`;
+      priceBox.appendChild(priceLabel);
+      priceBox.appendChild(priceValue);
+      return priceBox;
+    }
+
+    function createFilamentModalHeader({ displayName, hersteller, matchingSpoolIds, currentSpoolId, material, farbe, row, json }) {
+      const header = document.createElement('header');
+      header.className = 'filament-modal-header';
+
+      const heading = document.createElement('div');
+      heading.className = 'filament-modal-heading';
+
+      const nameEl = document.createElement('h2');
+      nameEl.className = 'filament-modal-name';
+      nameEl.textContent = displayName;
+      heading.appendChild(nameEl);
+
+      const meta = document.createElement('div');
+      meta.className = 'filament-modal-meta';
+      const brand = document.createElement('span');
+      brand.className = 'filament-modal-brand';
+      brand.textContent = hersteller || 'Unbekannter Hersteller';
+      meta.appendChild(brand);
+      appendLaserQualityBadge(meta, material, farbe, row);
+      heading.appendChild(meta);
+
+      if (Array.isArray(matchingSpoolIds) && matchingSpoolIds.length) {
+        heading.appendChild(createSpoolIdChips(matchingSpoolIds, currentSpoolId));
+      }
+
+      const actions = document.createElement('div');
+      actions.className = 'filament-modal-actions';
+      appendFilamentLabelButton(actions, row, json);
+
+      header.appendChild(heading);
+      header.appendChild(actions);
+      return header;
+    }
+
+    function createFilamentProductLink(url) {
+      if (!url) return null;
+      const link = document.createElement('a');
+      link.className = 'filament-product-link';
+      link.href = url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.innerHTML = `Produktlink <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+      return link;
+    }
+
+    function createFilamentHistoryPanel(loadingHtml) {
+      const sidebar = document.createElement('aside');
+      sidebar.className = 'filament-history-panel';
+
+      const header = document.createElement('div');
+      header.className = 'filament-history-header';
+      header.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 5H21V19H9V5Z" stroke="currentColor" stroke-width="2"/><path d="M3 5H15V19H3V5Z" stroke="currentColor" stroke-width="2"/><path d="M6 9H12M6 13H12M6 17H12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Messverlauf</span>`;
+      sidebar.appendChild(header);
+
+      const content = document.createElement('div');
+      content.className = 'history-content';
+      if (loadingHtml) content.innerHTML = loadingHtml;
+      sidebar.appendChild(content);
+      return { sidebar, content };
+    }
+
     function showFilamentImage(row) {
       const material = (row['Material'] || '').trim();
       const hersteller = (row['Hersteller'] || row['Manufacturer'] || '').trim();
@@ -3503,10 +4065,6 @@
         .filter(r => (r['Material'] || '').trim() === material && (r['Hersteller'] || r['Manufacturer'] || '').trim() === hersteller && (r['Farbe'] || r['Color'] || '').trim() === farbe)
         .map(r => r['Spool ID'])
         .filter(Boolean);
-      let spoolIdString = '';
-      if (matchingSpoolIds.length > 0) {
-        spoolIdString = ' (' + matchingSpoolIds.join(', ') + ')';
-      }
       const currentSpoolId = (row['Spool ID'] || '').trim();
       let modal = document.getElementById('filamentImageModal');
       if (!modal) {
@@ -3540,24 +4098,17 @@
       const img = document.createElement('img');
       img.src = imgUrlDefault;
       img.alt = `${material} ${hersteller} ${farbe}`;
-      img.style.maxWidth = '300px';
-      img.style.maxHeight = '280px';
-      img.style.borderRadius = '10px';
-      img.style.background = '#f6f6f6';
-      img.style.objectFit = 'contain';
-      img.style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)';
       img.onerror = () => {
         img.style.display = 'none';
         errorMsg.style.display = 'block';
       };
-      // Fehlermeldung Bild
       const errorMsg = document.createElement('div');
-      errorMsg.textContent = 'No image found!';
-      errorMsg.style.color = 'red';
+      errorMsg.textContent = 'Kein Bild gefunden';
+      errorMsg.style.color = '#b30000';
       errorMsg.style.display = 'none';
-      errorMsg.style.margin = '20px';
-      errorMsg.style.fontWeight = 'bold';
-      errorMsg.style.fontSize = '1.2rem';
+      errorMsg.style.fontWeight = '600';
+      errorMsg.style.fontSize = '0.95rem';
+      errorMsg.style.textAlign = 'center';
       // Lade die JSON mit fetch
       fetch(settingsUrl)
         .then(res => {
@@ -3565,207 +4116,53 @@
           return res.json();
         })
         .then(json => {
-          // Modal-Inhalt Wrapper
-          const inner = document.createElement('div');
-          inner.style.background = '#fff';
-          inner.style.padding = '24px 24px 20px 24px';
-          inner.style.borderRadius = '14px';
-          inner.style.maxWidth = '1100px';
-          inner.style.width = 'auto';
-          inner.style.height = 'auto';
-          inner.style.overflowY = 'visible';
-          inner.style.overflowX = 'visible';
-          inner.style.display = 'flex';
-          inner.style.flexDirection = 'column';
-          inner.style.alignItems = 'stretch';
-          inner.style.position = 'relative';
-          inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
-          inner.onclick = (e) => e.stopPropagation();
-          // Titel
-          const titleDiv = document.createElement('div');
-          titleDiv.style.fontWeight = 'bold';
-          titleDiv.style.fontSize = '2.1rem';
-          titleDiv.style.marginBottom = '10px';
-          titleDiv.style.display = 'flex';
-          titleDiv.style.flexDirection = 'column';
-          titleDiv.style.alignItems = 'flex-start';
-          titleDiv.style.gap = '0';
-          // Name + Farbe + Spool IDs
-          let nameWithColor = '';
-          if (json.name) {
-            // Name fett und groß
-            const nameDiv = document.createElement('div');
-            nameDiv.style.fontWeight = 'bold';
-            nameDiv.style.fontSize = '2.1rem';
-            // Farbnamen
-            let farbTextNode = document.createTextNode(json.name + (farbeText ? ' ' + farbeText : ''));
-            nameDiv.appendChild(farbTextNode);
-            // Spool IDs dezent
-            if (spoolIdString) {
-              const idSpan = document.createElement('span');
-              idSpan.style.fontSize = '1.3rem';
-              idSpan.style.color = '#888';
-              idSpan.style.marginLeft = '10px';
-              idSpan.style.fontWeight = 'normal';
-              // Build formatted IDs with current one bold
-              if (Array.isArray(matchingSpoolIds) && matchingSpoolIds.length) {
-                const openParen = document.createTextNode(' (');
-                idSpan.appendChild(openParen);
-                matchingSpoolIds.forEach((id, idx) => {
-                  const idNode = document.createElement('span');
-                  const trimmedId = String(id || '').trim();
-                  if (trimmedId === currentSpoolId && trimmedId !== '') {
-                    idNode.style.fontWeight = 'bold';
-                    idNode.style.color = '#555';
-                  }
-                  idNode.textContent = trimmedId;
-                  idSpan.appendChild(idNode);
-                  if (idx < matchingSpoolIds.length - 1) {
-                    idSpan.appendChild(document.createTextNode(', '));
-                  }
-                });
-                const closeParen = document.createTextNode(')');
-                idSpan.appendChild(closeParen);
-              } else {
-                idSpan.textContent = spoolIdString;
-              }
-              nameDiv.appendChild(idSpan);
-            }
-            // Hersteller klein darunter
-            const herstellerDiv = document.createElement('div');
-            herstellerDiv.style.fontSize = '1.1rem';
-            herstellerDiv.style.color = '#888';
-            herstellerDiv.style.fontWeight = 'normal';
-            herstellerDiv.style.marginTop = '2px';
-            herstellerDiv.style.display = 'flex';
-            herstellerDiv.style.alignItems = 'center';
-            herstellerDiv.style.gap = '8px';
-            const herstellerText = document.createElement('span');
-            herstellerText.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
-            herstellerDiv.appendChild(herstellerText);
-            
-            // Prüfe Laserqualität oder zeige graues Icon wenn kein Eintrag
-            {
-              const quality = getLaserQualityForFilament(material, farbe);
-              if (quality) {
-                const badgeHtml = getQualityBadge(quality);
-                if (badgeHtml) {
-                  const badgeSpan = document.createElement('span');
-                  badgeSpan.innerHTML = badgeHtml;
-                  badgeSpan.style.cursor = 'pointer';
-                  badgeSpan.title = 'Laserparameter ansehen';
-                  badgeSpan.onclick = (e) => {
-                    e.stopPropagation();
-                    // Open Laser Settings Library with this filament's parameters
-                    // For now, add to window to track the last clicked filament
-                    window.lastLaserFilament = { material, farbe, row };
-                    window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
-                  };
-                  herstellerDiv.appendChild(badgeSpan);
-                }
-              } else {
-                const badgeHtml = getQualityBadge('none');
-                if (badgeHtml) {
-                  const badgeSpan = document.createElement('span');
-                  badgeSpan.innerHTML = badgeHtml;
-                  badgeSpan.style.cursor = 'default';
-                  badgeSpan.title = 'kein Laser-Eintrag';
-                  herstellerDiv.appendChild(badgeSpan);
-                }
-              }
-            }
-            
-            titleDiv.textContent = '';
-            titleDiv.appendChild(nameDiv);
-            titleDiv.appendChild(herstellerDiv);
-          }
-          const popupButtonWrapper = document.createElement('div');
-          popupButtonWrapper.style.cssText = 'position:absolute;top:18px;right:18px;z-index:10;';
-          inner.appendChild(popupButtonWrapper);
-          appendFilamentLabelButton(popupButtonWrapper, row, json);
-          const popupLabelButton = popupButtonWrapper.querySelector('button');
-          if (popupLabelButton) popupLabelButton.style.marginTop = '0';
-          // Infos-Wrapper
+          const inner = createFilamentModalCard(modal);
+          inner.appendChild(createFilamentModalHeader({
+            displayName: json.name ? (json.name + (farbeText ? ' ' + farbeText : '')) : (material + (farbeText ? ' ' + farbeText : '')),
+            hersteller,
+            matchingSpoolIds,
+            currentSpoolId,
+            material,
+            farbe,
+            row,
+            json
+          }));
           const infoCol = document.createElement('div');
-          infoCol.style.display = 'flex';
-          infoCol.style.flexDirection = 'column';
-          infoCol.style.alignItems = 'flex-start';
-          infoCol.style.justifyContent = 'flex-start';
-          infoCol.style.width = 'min(100%, 700px)';
-          infoCol.style.maxWidth = '700px';
-          infoCol.style.minWidth = '0';
-          infoCol.style.flex = '1';
-          infoCol.style.minHeight = '0';
-          // Produktlink
-          // (Removed: if (json.product_url) { ... infoCol.appendChild(link); })
-          // Technische Daten
+          infoCol.className = 'filament-info-panel';
           if (json.technical_data) {
-            const table = document.createElement('table');
-            table.style.width = '100%';
-            table.style.marginTop = '8px';
-            table.style.borderCollapse = 'collapse';
-            Object.entries(json.technical_data).forEach(([k, v]) => {
-              if (k === 'Properties') return; // Skip Properties here
-              const tr = document.createElement('tr');
-              const tdKey = document.createElement('td');
-              tdKey.textContent = k;
-              tdKey.style.fontWeight = 'bold';
-              tdKey.style.paddingRight = '16px';
-              tdKey.style.paddingBottom = '6px';
-              const tdVal = document.createElement('td');
-              tdVal.textContent = v;
-              tdVal.style.paddingBottom = '6px';
-              tr.appendChild(tdKey);
-              tr.appendChild(tdVal);
-              table.appendChild(tr);
-            });
-            infoCol.appendChild(table);
+            const technicalTitle = document.createElement('h3');
+            technicalTitle.textContent = 'Technische Daten';
+            technicalTitle.className = 'filament-section-title';
+            infoCol.appendChild(technicalTitle);
 
-            // Material Properties highlighted section (English)
+            const specList = document.createElement('dl');
+            specList.className = 'filament-spec-list';
+            Object.entries(json.technical_data).forEach(([k, v]) => {
+              if (k === 'Properties') return;
+              const dt = document.createElement('dt');
+              dt.textContent = k;
+              const dd = document.createElement('dd');
+              dd.textContent = v;
+              specList.appendChild(dt);
+              specList.appendChild(dd);
+            });
+            infoCol.appendChild(specList);
+
             if (Array.isArray(json.technical_data.Properties) && json.technical_data.Properties.length > 0) {
               const propBox = document.createElement('div');
-              propBox.style.background = '#f0f4f9';
-              propBox.style.border = '1.5px solid #b3c6e0';
-              propBox.style.borderRadius = '8px';
-              propBox.style.padding = '12px 16px 8px 16px';
-              propBox.style.marginTop = '16px';
-              propBox.style.marginBottom = '4px';
-              // Match width to technical data table
-              propBox.style.maxWidth = '700px';
-              propBox.style.width = 'min(100%, 700px)';
-              // Dark mode adjustments
-              if (document.body.classList.contains('dark')) {
-                propBox.style.background = 'var(--bg)';
-                propBox.style.border = '1.5px solid #30363d';
-                propBox.style.color = 'var(--text)';
-              }
-
+              propBox.className = 'filament-prop-box';
               const propTitle = document.createElement('div');
-              propTitle.textContent = 'Material Properties';
-              propTitle.style.fontWeight = 'bold';
-              propTitle.style.fontSize = '1.1rem';
-              propTitle.style.marginBottom = '8px';
+              propTitle.className = 'filament-section-title';
+              propTitle.textContent = 'Materialeigenschaften';
               propBox.appendChild(propTitle);
 
               const propList = document.createElement('ul');
-              propList.style.margin = '0';
-              propList.style.padding = '0 0 0 18px';
-              propList.style.listStyle = 'none';
-
+              propList.className = 'filament-prop-list';
               json.technical_data.Properties.forEach(p => {
                 const li = document.createElement('li');
-                li.style.display = 'flex';
-                li.style.alignItems = 'flex-start';
-                li.style.gap = '8px';
-                li.style.marginBottom = '4px';
-                // Icon
-                const icon = document.createElement('span');
-                icon.innerHTML = `<svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 10.5L9 14.5L15 7.5" stroke="#0057b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-                icon.style.marginTop = '2px';
-                li.appendChild(icon);
-                // Text
+                li.innerHTML = `<svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M5 10.5L9 14.5L15 7.5" stroke="#0057b8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
                 const txt = document.createElement('span');
-                txt.textContent = p.replace(/^- /, '').trim();
+                txt.textContent = String(p).replace(/^- /, '').trim();
                 li.appendChild(txt);
                 propList.appendChild(li);
               });
@@ -3773,455 +4170,96 @@
               infoCol.appendChild(propBox);
             }
           }
-          // Layout-Wrapper for image, data, and history side column
+          const priceBox = createFilamentPriceBox(json);
+          if (priceBox) infoCol.appendChild(priceBox);
+
           const contentRow = document.createElement('div');
-          contentRow.style.display = 'flex';
-          contentRow.style.flexDirection = 'row';
-          contentRow.style.gap = '28px';
-          contentRow.style.alignItems = 'stretch';
-          contentRow.style.justifyContent = 'flex-start';
-          contentRow.style.width = '100%';
-          contentRow.style.minWidth = '0';
-          contentRow.style.flexWrap = 'wrap';
-          contentRow.style.flex = '1';
-          
-          // Image and product link column
+          contentRow.className = 'filament-modal-content';
+
           const imageCol = document.createElement('div');
-          imageCol.style.display = 'flex';
-          imageCol.style.flexDirection = 'column';
-          imageCol.style.alignItems = 'center';
-          imageCol.style.justifyContent = 'flex-start';
-          imageCol.style.flexShrink = '0';
+          imageCol.className = 'filament-image-panel';
           imageCol.appendChild(img);
           imageCol.appendChild(errorMsg);
-          
-          // Product link below image, left-aligned
-          if (json.product_url) {
-            const link = document.createElement('a');
-            link.href = json.product_url;
-            link.target = '_blank';
-            link.style.display = 'inline-flex';
-            link.style.alignItems = 'center';
-            link.style.gap = '8px';
-            link.style.background = '#0057b8';
-            link.style.color = '#fff';
-            link.style.fontWeight = 'bold';
-            link.style.fontSize = '17px';
-            link.style.padding = '10px 22px';
-            link.style.borderRadius = '7px';
-            link.style.textDecoration = 'none';
-            link.style.marginBottom = '18px';
-            link.style.marginTop = '16px';
-            link.style.transition = 'background 0.2s';
-            link.style.alignSelf = 'center';
-            link.onmouseover = () => { link.style.background = '#003e87'; };
-            link.onmouseout = () => { link.style.background = '#0057b8'; };
-            // Link icon (SVG)
-            const icon = document.createElement('span');
-            icon.innerHTML = `<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-            link.textContent = 'Product link';
-            link.appendChild(icon);
-            imageCol.appendChild(link);
-          }
+          const productLink = createFilamentProductLink(json.product_url);
+          if (productLink) imageCol.appendChild(productLink);
 
-          // Radar chart card (attractive, theme-aware)
           const ratings = getMaterialRatingsFromJson(json);
           if (ratings) {
             const chartCard = document.createElement('div');
-            chartCard.style.border = '1px solid #e0e6ed';
-            chartCard.style.borderRadius = '10px';
-            chartCard.style.padding = '12px 14px 8px 14px';
-            chartCard.style.marginTop = '12px';
-            chartCard.style.width = '100%';
-            chartCard.style.maxWidth = '340px';
-            chartCard.style.background = '#fafdff';
-            chartCard.style.boxShadow = '0 2px 10px rgba(0,0,0,0.06)';
-            if (document.body.classList.contains('dark')) {
-              chartCard.style.background = 'var(--bg)';
-              chartCard.style.border = '1px solid #30363d';
-              chartCard.style.boxShadow = '0 2px 16px rgba(0,0,0,0.35)';
-            }
-
+            chartCard.className = 'filament-chart-card';
             const chartTitle = document.createElement('div');
-            chartTitle.textContent = 'Material Profile';
-            chartTitle.style.fontWeight = 'bold';
-            chartTitle.style.fontSize = '1.0rem';
-            chartTitle.style.margin = '0 0 8px 2px';
+            chartTitle.className = 'filament-section-title';
+            chartTitle.textContent = 'Materialprofil';
             chartCard.appendChild(chartTitle);
-
             const canvas = document.createElement('canvas');
             canvas.style.width = '100%';
-            canvas.style.height = '220px';
+            canvas.style.height = '200px';
             canvas.style.display = 'block';
             chartCard.appendChild(canvas);
-
             imageCol.appendChild(chartCard);
-
-            // Defer render to allow layout sizing
             requestAnimationFrame(() => {
-              renderRadarChart(
-                canvas,
-                ratings.labels,
-                ratings.values,
-                { dark: document.body.classList.contains('dark') }
-              );
+              renderRadarChart(canvas, ratings.labels, ratings.values, {
+                dark: document.body.classList.contains('dark')
+              });
             });
           }
-          
-          // Schmale Seitenleiste für Messverlauf - weniger prominent
-          const historySidebar = document.createElement('div');
-          historySidebar.style.width = '240px';
-          historySidebar.style.flexShrink = '0';
-          historySidebar.style.borderLeft = '1px solid #e0e6ed';
-          historySidebar.style.paddingLeft = '20px';
-          historySidebar.style.marginLeft = '20px';
-          historySidebar.style.backgroundColor = '#fafbfc';
-          historySidebar.style.borderRadius = '0 12px 12px 0';
-          historySidebar.style.display = 'flex';
-          historySidebar.style.flexDirection = 'column';
-          historySidebar.style.minHeight = '0';
-          // Dark mode adjustments
-          if (document.body.classList.contains('dark')) {
-            historySidebar.style.borderLeft = '1px solid #30363d';
-            historySidebar.style.backgroundColor = 'var(--bg)';
-            historySidebar.style.color = 'var(--text)';
-          }
-          
-          // Header für die Seitenleiste
-          const historyHeader = document.createElement('div');
-          historyHeader.style.display = 'flex';
-          historyHeader.style.alignItems = 'center';
-          historyHeader.style.gap = '8px';
-          historyHeader.style.marginBottom = '14px';
-          historyHeader.style.paddingBottom = '10px';
-          historyHeader.style.borderBottom = '1px solid #e0e6ed';
-          
-          // Icon für Messverlauf
-          const historyIcon = document.createElement('span');
-          historyIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 19V5H21V19H9Z" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M3 19V5H15V19H3Z" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 9H12" stroke="#666" stroke-width="2" stroke-linecap="round"/>
-            <path d="M6 13H12" stroke="#666" stroke-width="2" stroke-linecap="round"/>
-            <path d="M6 17H12" stroke="#666" stroke-width="2" stroke-linecap="round"/>
-          </svg>`;
-          historyIcon.style.display = 'flex';
-          historyIcon.style.alignItems = 'center';
-          
-          // Titel für die Seitenleiste
-          const historyTitle = document.createElement('div');
-          historyTitle.textContent = 'Recent Measurements';
-          historyTitle.style.fontWeight = '600';
-          historyTitle.style.fontSize = '0.95rem';
-          historyTitle.style.color = '#555';
-          
-          historyHeader.appendChild(historyIcon);
-          historyHeader.appendChild(historyTitle);
-          historySidebar.appendChild(historyHeader);
-          
-          // Content Container für die Seitenleiste
-          const historyContent = document.createElement('div');
-          historyContent.className = 'history-content';
-          historyContent.style.minHeight = '180px';
-          historyContent.style.flex = '1';
-          historyContent.style.display = 'flex';
-          historyContent.style.flexDirection = 'column';
-          historyContent.style.overflowY = 'auto'; // Scrollbar für die rechte Spalte
-          historyContent.style.maxHeight = '400px'; // Begrenzte Höhe, um Scrollbar zu aktivieren
-          historyContent.style.position = 'relative'; // Ensure proper positioning for sticky footer
-          
-          // Loading indicator
-          const loadingDiv = document.createElement('div');
-          loadingDiv.style.padding = '16px';
-          loadingDiv.style.textAlign = 'center';
-          loadingDiv.style.color = '#888';
-          loadingDiv.style.fontSize = '0.9rem';
-          loadingDiv.innerHTML = `
-            <div style="margin-bottom: 8px;">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="10" stroke="#e0e6ed" stroke-width="2"/>
-                <path d="M12 2A10 10 0 0 1 22 12" stroke="#0057b8" stroke-width="2" stroke-linecap="round">
-                  <animateTransform attributeName="transform" attributeType="XML" type="rotate" from="0 12 12" to="360 12 12" dur="1s" repeatCount="indefinite"/>
-                </path>
-              </svg>
-            </div>
-            <div>Loading measurements...</div>
-          `;
-          historyContent.appendChild(loadingDiv);
-          
-          historySidebar.appendChild(historyContent);
-          
+
+          const { sidebar: historySidebar, content: historyContent } = createFilamentHistoryPanel(`
+            <div style="padding:16px;text-align:center;color:#888;font-size:0.9rem;">Messdaten werden geladen…</div>
+          `);
+
           contentRow.appendChild(imageCol);
           contentRow.appendChild(infoCol);
           contentRow.appendChild(historySidebar);
-          
-          // Zusammenbauen
-          inner.appendChild(titleDiv);
           inner.appendChild(contentRow);
-          
-          // Lade Messdaten automatisch
+
           loadMeasurementHistory(row, historyContent);
           modal.innerHTML = '';
           modal.appendChild(inner);
         })
         .catch(() => {
-          // Modal-Inhalt Wrapper (auch bei Fehler)
-          const inner = document.createElement('div');
-          inner.style.background = '#fff';
-          inner.style.padding = '24px 24px 20px 24px';
-          inner.style.borderRadius = '14px';
-          inner.style.maxWidth = '1100px';
-          inner.style.width = 'auto';
-          inner.style.height = 'auto';
-          inner.style.overflowY = 'visible';
-          inner.style.display = 'flex';
-          inner.style.flexDirection = 'column';
-          inner.style.alignItems = 'stretch';
-          inner.style.boxShadow = '0 6px 32px rgba(0,0,0,0.18)';
-          inner.onclick = (e) => { e.stopPropagation(); };
-          // Titel
-          const titleDiv = document.createElement('div');
-          titleDiv.style.fontWeight = 'bold';
-          titleDiv.style.fontSize = '2.1rem';
-          titleDiv.style.marginBottom = '8px';
-          titleDiv.style.display = 'flex';
-          titleDiv.style.flexDirection = 'column';
-          titleDiv.style.alignItems = 'flex-start';
-          titleDiv.style.gap = '0';
-          // Name + Farbe + Spool IDs
-          let nameWithColor = '';
-          if (row['Material']) {
-            // Name fett und groß
-            const nameDiv = document.createElement('div');
-            nameDiv.style.fontWeight = 'bold';
-            nameDiv.style.fontSize = '2.1rem';
-            // Farbnamen
-            let farbTextNode = document.createTextNode(row['Material'] + (farbeText ? ' ' + farbeText : ''));
-            nameDiv.appendChild(farbTextNode);
-            // Spool IDs dezent
-            if (spoolIdString) {
-              const idSpan = document.createElement('span');
-              idSpan.style.fontSize = '1.3rem';
-              idSpan.style.color = '#888';
-              idSpan.style.marginLeft = '10px';
-              idSpan.style.fontWeight = 'normal';
-              if (Array.isArray(matchingSpoolIds) && matchingSpoolIds.length) {
-                const openParen = document.createTextNode(' (');
-                idSpan.appendChild(openParen);
-                matchingSpoolIds.forEach((id, idx) => {
-                  const idNode = document.createElement('span');
-                  const trimmedId = String(id || '').trim();
-                  if (trimmedId === currentSpoolId && trimmedId !== '') {
-                    idNode.style.fontWeight = 'bold';
-                    idNode.style.color = '#555';
-                  }
-                  idNode.textContent = trimmedId;
-                  idSpan.appendChild(idNode);
-                  if (idx < matchingSpoolIds.length - 1) {
-                    idSpan.appendChild(document.createTextNode(', '));
-                  }
-                });
-                const closeParen = document.createTextNode(')');
-                idSpan.appendChild(closeParen);
-              } else {
-                idSpan.textContent = spoolIdString;
-              }
-              nameDiv.appendChild(idSpan);
-            }
-            // Hersteller klein darunter
-            const herstellerDiv = document.createElement('div');
-            herstellerDiv.style.fontSize = '1.1rem';
-            herstellerDiv.style.color = '#888';
-            herstellerDiv.style.fontWeight = 'normal';
-            herstellerDiv.style.marginTop = '2px';
-            herstellerDiv.style.display = 'flex';
-            herstellerDiv.style.alignItems = 'center';
-            herstellerDiv.style.gap = '8px';
-            const herstellerText = document.createElement('span');
-            herstellerText.textContent = (row['Hersteller'] || row['Manufacturer'] || '');
-            herstellerDiv.appendChild(herstellerText);
-            
-            // Prüfe Laserqualität oder zeige graues Icon wenn kein Eintrag
-            {
-              const quality = getLaserQualityForFilament(material, farbe);
-              if (quality) {
-                const badgeHtml = getQualityBadge(quality);
-                if (badgeHtml) {
-                  const badgeSpan = document.createElement('span');
-                  badgeSpan.innerHTML = badgeHtml;
-                  badgeSpan.style.cursor = 'pointer';
-                  badgeSpan.title = 'Laserparameter ansehen';
-                  badgeSpan.onclick = (e) => {
-                    e.stopPropagation();
-                    // Open Laser Settings Library with this filament's parameters
-                    // For now, add to window to track the last clicked filament
-                    window.lastLaserFilament = { material, farbe, row };
-                    window.open('https://hoedii.github.io/laserparameter/', 'laser_settings');
-                  };
-                  herstellerDiv.appendChild(badgeSpan);
-                }
-              } else {
-                const badgeHtml = getQualityBadge('none');
-                if (badgeHtml) {
-                  const badgeSpan = document.createElement('span');
-                  badgeSpan.innerHTML = badgeHtml;
-                  badgeSpan.style.cursor = 'default';
-                  badgeSpan.title = 'kein Laser-Eintrag';
-                  herstellerDiv.appendChild(badgeSpan);
-                }
-              }
-            }
-            
-            titleDiv.textContent = '';
-            titleDiv.appendChild(nameDiv);
-            titleDiv.appendChild(herstellerDiv);
-          }
-          appendFilamentLabelButton(titleDiv, row, null);
-          // Layout-Wrapper for image and data
+          const inner = createFilamentModalCard(modal);
+          inner.appendChild(createFilamentModalHeader({
+            displayName: material + (farbeText ? ' ' + farbeText : ''),
+            hersteller,
+            matchingSpoolIds,
+            currentSpoolId,
+            material,
+            farbe,
+            row,
+            json: null
+          }));
+
           const contentRow = document.createElement('div');
-          contentRow.style.display = 'flex';
-          contentRow.style.flexDirection = 'row';
-          contentRow.style.gap = '28px';
-          contentRow.style.alignItems = 'stretch';
-          contentRow.style.justifyContent = 'flex-start';
-          contentRow.style.width = '100%';
-          contentRow.style.minWidth = '0';
-          contentRow.style.flexWrap = 'wrap';
-          contentRow.style.flex = '1';
+          contentRow.className = 'filament-modal-content';
+
           const imageCol = document.createElement('div');
-          imageCol.style.display = 'flex';
-          imageCol.style.flexDirection = 'column';
-          imageCol.style.alignItems = 'center';
-          imageCol.style.justifyContent = 'flex-start';
+          imageCol.className = 'filament-image-panel';
           imageCol.appendChild(img);
           imageCol.appendChild(errorMsg);
-          if (row.product_url) {
-            const link = document.createElement('a');
-            link.href = row.product_url;
-            link.target = '_blank';
-            link.style.display = 'inline-flex';
-            link.style.alignItems = 'center';
-            link.style.gap = '8px';
-            link.style.background = '#0057b8';
-            link.style.color = '#fff';
-            link.style.fontWeight = 'bold';
-            link.style.fontSize = '17px';
-            link.style.padding = '10px 22px';
-            link.style.borderRadius = '7px';
-            link.style.textDecoration = 'none';
-            link.style.marginBottom = '18px';
-            link.style.marginTop = '16px';
-            link.style.transition = 'background 0.2s';
-            link.style.alignSelf = 'center';
-            link.onmouseover = () => { link.style.background = '#003e87'; };
-            link.onmouseout = () => { link.style.background = '#0057b8'; };
-            const icon = document.createElement('span');
-            icon.innerHTML = `<svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7.5 12.5L12.5 7.5M12 12H14.5C15.3284 12 16 11.3284 16 10.5V5.5C16 4.67157 15.3284 4 14.5 4H9.5C8.67157 4 8 4.67157 8 5.5V8\" stroke=\"white\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>`;
-            link.textContent = 'Product link';
-            link.appendChild(icon);
-            imageCol.appendChild(link);
-          }
-          contentRow.appendChild(imageCol);
-          
-          // Info column for error case
+          const productLink = createFilamentProductLink(row.product_url);
+          if (productLink) imageCol.appendChild(productLink);
+
           const infoCol = document.createElement('div');
-          infoCol.style.display = 'flex';
-          infoCol.style.flexDirection = 'column';
-          infoCol.style.alignItems = 'flex-start';
-          infoCol.style.justifyContent = 'flex-start';
-          infoCol.style.width = 'min(100%, 700px)';
-          infoCol.style.maxWidth = '700px';
-          infoCol.style.minWidth = '0';
-          infoCol.style.flex = '1';
-          infoCol.style.minHeight = '0';
-          
-          // Error message in info column
+          infoCol.className = 'filament-info-panel';
           const errorInfoDiv = document.createElement('div');
           errorInfoDiv.style.color = '#b30000';
-          errorInfoDiv.style.fontWeight = 'bold';
-          errorInfoDiv.style.fontSize = '1.1rem';
-          errorInfoDiv.style.marginTop = '20px';
-          errorInfoDiv.textContent = 'Error loading material data';
+          errorInfoDiv.style.fontWeight = '600';
+          errorInfoDiv.textContent = 'Technische Daten konnten nicht geladen werden.';
           infoCol.appendChild(errorInfoDiv);
-          
-          contentRow.appendChild(infoCol);
-          
-          // History sidebar for error case
-          const historySidebar = document.createElement('div');
-          historySidebar.style.width = '240px';
-          historySidebar.style.flexShrink = '0';
-          historySidebar.style.borderLeft = '1px solid #e0e6ed';
-          historySidebar.style.paddingLeft = '20px';
-          historySidebar.style.marginLeft = '20px';
-          historySidebar.style.backgroundColor = '#fafbfc';
-          historySidebar.style.borderRadius = '0 12px 12px 0';
-          historySidebar.style.display = 'flex';
-          historySidebar.style.flexDirection = 'column';
-          historySidebar.style.minHeight = '0';
-          
-          // Header for sidebar
-          const historyHeader = document.createElement('div');
-          historyHeader.style.display = 'flex';
-          historyHeader.style.alignItems = 'center';
-          historyHeader.style.gap = '8px';
-          historyHeader.style.marginBottom = '14px';
-          historyHeader.style.paddingBottom = '10px';
-          historyHeader.style.borderBottom = '1px solid #e0e6ed';
-          
-          // Icon for history
-          const historyIcon = document.createElement('span');
-          historyIcon.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 19V5H21V19H9Z" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M3 19V5H15V19H3Z" stroke="#666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 9H12" stroke="#666" stroke-width="2" stroke-linecap="round"/>
-            <path d="M6 13H12" stroke="#666" stroke-width="2" stroke-linecap="round"/>
-            <path d="M6 17H12" stroke="#666" stroke-width="2" stroke-linecap="round"/>
-          </svg>`;
-          historyIcon.style.display = 'flex';
-          historyIcon.style.alignItems = 'center';
-          
-          // Title for sidebar
-          const historyTitle = document.createElement('div');
-          historyTitle.textContent = 'Recent Measurements';
-          historyTitle.style.fontWeight = '600';
-          historyTitle.style.fontSize = '0.95rem';
-          historyTitle.style.color = '#555';
-          
-          historyHeader.appendChild(historyIcon);
-          historyHeader.appendChild(historyTitle);
-          historySidebar.appendChild(historyHeader);
-          
-          // Content container for sidebar
-          const historyContent = document.createElement('div');
-          historyContent.className = 'history-content';
-          historyContent.style.minHeight = '200px';
-          historyContent.style.flex = '1';
-          historyContent.style.display = 'flex';
-          historyContent.style.flexDirection = 'column';
-          historyContent.style.overflowY = 'auto'; // Scrollbar für die rechte Spalte
-          historyContent.style.maxHeight = '400px'; // Begrenzte Höhe, um Scrollbar zu aktivieren
-          
-          // Error message in history content
+
+          const { sidebar: historySidebar, content: historyContent } = createFilamentHistoryPanel();
           const historyErrorDiv = document.createElement('div');
           historyErrorDiv.style.padding = '16px';
           historyErrorDiv.style.textAlign = 'center';
           historyErrorDiv.style.color = '#b30000';
           historyErrorDiv.style.fontSize = '0.9rem';
-          historyErrorDiv.innerHTML = `
-            <div style="margin-bottom: 8px;">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2V6M12 18V22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M7.76 7.76L4.93 4.93M19.07 19.07L16.24 16.24" stroke="#b30000" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <div>Error loading measurements</div>
-          `;
+          historyErrorDiv.textContent = 'Messdaten konnten nicht geladen werden.';
           historyContent.appendChild(historyErrorDiv);
-          
-          historySidebar.appendChild(historyContent);
+
+          contentRow.appendChild(imageCol);
+          contentRow.appendChild(infoCol);
           contentRow.appendChild(historySidebar);
-          
-          // Zusammenbauen
-          inner.appendChild(titleDiv);
           inner.appendChild(contentRow);
           modal.innerHTML = '';
           modal.appendChild(inner);
@@ -4454,13 +4492,31 @@
         // shrink font on small canvases
         const baseFont = Math.min(12, Math.max(10, Math.floor(Math.min(cssWidth, cssHeight) / 26)));
         ctx.font = baseFont + 'px Segoe UI, sans-serif';
+        const maxLabelWidth = Math.max(76, Math.min(112, cssWidth * 0.34));
         labels.forEach((label, i) => {
           const ang = -Math.PI / 2 + i * angleStep;
           const lx = centerX + (radius + 12) * Math.cos(ang);
           const ly = centerY + (radius + 12) * Math.sin(ang);
           ctx.textAlign = Math.cos(ang) > 0.2 ? 'left' : (Math.cos(ang) < -0.2 ? 'right' : 'center');
-          ctx.textBaseline = Math.sin(ang) > 0.2 ? 'top' : (Math.sin(ang) < -0.2 ? 'bottom' : 'middle');
-          ctx.fillText(label, lx, ly);
+          const words = String(label).split(/\s+/);
+          const lines = [];
+          let currentLine = '';
+          words.forEach(word => {
+            const candidate = currentLine ? `${currentLine} ${word}` : word;
+            if (currentLine && ctx.measureText(candidate).width > maxLabelWidth) {
+              lines.push(currentLine);
+              currentLine = word;
+            } else {
+              currentLine = candidate;
+            }
+          });
+          if (currentLine) lines.push(currentLine);
+          const lineHeight = baseFont + 2;
+          const startY = ly - ((lines.length - 1) * lineHeight) / 2;
+          ctx.textBaseline = 'middle';
+          lines.forEach((line, lineIndex) => {
+            ctx.fillText(line, lx, startY + lineIndex * lineHeight, maxLabelWidth);
+          });
         });
       }
 
