@@ -1,5 +1,6 @@
 {
   "name": "PETG",
+  "price": "15",
   "product_url": "https://store.anycubic.com/products/petg-filament",
   "technical_data": {
     "Dry Out Before Use": "Recommended",
