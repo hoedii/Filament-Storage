@@ -1,5 +1,6 @@
 {
   "name": "ASA",
+  "price": "24",
   "product_url": "https://store.anycubic.com/products/asa-filament",
   "technical_data": {
     "Dry Out Before Use": "Recommended",
