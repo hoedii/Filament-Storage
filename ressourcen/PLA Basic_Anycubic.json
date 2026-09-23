@@ -1,5 +1,6 @@
 {
   "name": "PLA Basic",
+  "price": "16",
   "product_url": "https://store.anycubic.com/products/pla-filament",
   "technical_data": {
     "Dry Out Before Use": "Recommended",
