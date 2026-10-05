@@ -21,7 +21,7 @@
   },
   "ratings": {
     "impactStrength": 8,
-    "stiffness": 2,
+    "stiffness": 10,
     "budgetFriendly": 2,
     "heatResistance": 10,
     "printability": 3
