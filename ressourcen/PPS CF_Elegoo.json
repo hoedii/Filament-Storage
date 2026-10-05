@@ -1,0 +1,29 @@
+{
+  "name": "PPS CF",
+  "price": "60",
+  "product_url": "https://eu.elegoo.com/products/pps-cf?_pos=1&_psq=pps+cf&_psid=0afdc7d90&_ss=e",
+  "technical_data": {
+    "Dry Out Before Use": "Required",
+    "Dry Conditions": "100℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "290-320℃",
+    "Heated Bed Temperature": "100-120℃",
+    "Printing Speed": "70 mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "263°C",
+    "Elongation at Break": "8.1%",
+    "Properties": [
+      "- Extremely high stiffness and strength",
+      "- Ultra high heat deflection temperature",
+      "- Expensive material",
+      "- Difficult to print",
+      "- Excellent chemical properties"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 8,
+    "stiffness": 2,
+    "budgetFriendly": 2,
+    "heatResistance": 10,
+    "printability": 3
+  }
+}

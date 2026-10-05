@@ -1,0 +1,28 @@
+{
+  "name": "PC FR",
+  "price": "35",
+  "product_url": "https://eu.elegoo.com/collections/filaments/products/pc-fr",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "80℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "260-280℃",
+    "Heated Bed Temperature": "90-110℃",
+    "Printing Speed": "80 mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "112°C",
+    "Elongation at Break": "7.9%",
+    "Properties": [
+      "- UL94-2023V-0 Flame Retardency",
+      "- Superior Impact Strength",
+      "- Lightweight (low density)",
+      "- Exceptional Heat Resistance"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 8,
+    "stiffness": 7,
+    "budgetFriendly": 2,
+    "heatResistance": 8,
+    "printability": 3
+  }
+}

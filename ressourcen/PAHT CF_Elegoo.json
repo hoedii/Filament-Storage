@@ -1,0 +1,27 @@
+{
+  "name": "PAHT CF",
+  "price": "56",
+  "product_url": "https://eu.elegoo.com/products/paht-cf-filament-1-75mm-colored-1kg?_pos=1&_psq=paht&_psid=20d628ece&_ss=e",
+  "technical_data": {
+    "Dry Out Before Use": "Required",
+    "Dry Conditions": "80℃, 8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "260-290℃",
+    "Heated Bed Temperature": "90-110℃",
+    "Printing Speed": "80 mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "194°C",
+    "Elongation at Break": "14.2%",
+    "Properties": [
+      "- Extremely high strength and rigidity",
+      "- Very high heat deflection temperature",
+      "- Expensive Material"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 6,
+    "stiffness": 9,
+    "budgetFriendly": 2,
+    "heatResistance": 9,
+    "printability": 2
+  }
+}
