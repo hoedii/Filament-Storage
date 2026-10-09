@@ -1,0 +1,31 @@
+{
+  "name": "PLA Basic",
+  "price": "21",
+  "product_url": "https://store.creality.com/products/hyper-pla-rfid-3d-printing-filament-1kg",
+  "technical_data": {
+    "Dry Out Before Use": "Recommended",
+    "Dry Conditions": "45-50℃, 6-8h",
+    "ACE Pro Compatibility": "Compatible",
+    "Printing Temperature": "190-230℃",
+    "Heated Bed Temperature": "55-65℃",
+    "Printing Speed": "50-200mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "54°C",
+    "Elongation at Break": "4%",
+    "Properties": [
+    "- Smart RFID Tagging for Hyper PLA",
+    "- Faster Printing",
+    "- Neat Spooling and Premium Quality",
+    "- Wide Applicability"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 4,
+    "stiffness": 3,
+    "budgetFriendly": 10,
+    "heatResistance": 1,
+    "printability": 10
+  }
+}
+
+
+
