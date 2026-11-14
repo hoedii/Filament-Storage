@@ -1,0 +1,30 @@
+{
+  "name": "TPU 75A (2.85mm)",
+  "price": "31",
+  "product_url": "https://eu.store.bambulab.com/de/products/tpu-75a-2-85mm",
+  "technical_data": {
+    "Dry Out Before Use": "Necessary",
+    "Dry Conditions": "70℃, 8h",
+    "ACE Pro Compatibility": "only H3C",
+    "Printing Temperature": "200-250℃",
+    "Heated Bed Temperature": "30-35℃",
+    "Printing Speed": "<200mm/s",
+    "Heat Deflection Temperature (0.45MPa)": "-",
+    "Elongation at Break": "800%",
+    "Properties": [
+    "- Rubber texture",
+    "- Excellent elasticity",
+    "- Comfortable to the touch",
+    "- Highly durable"
+    ]
+  },
+  "ratings": {
+    "impactStrength": 10,
+    "stiffness": 1,
+    "budgetFriendly": 5,
+    "heatResistance": 1,
+    "printability": 5
+  }
+}
+
+
